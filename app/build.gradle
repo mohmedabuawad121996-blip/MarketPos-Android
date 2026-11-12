@@ -1,0 +1,37 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.marketpos.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.marketpos.app'
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.12.0'
+
+    // Google sign-in and Google Drive upload
+    implementation 'com.google.android.gms:play-services-auth:21.2.0'
+    implementation 'com.google.api-client:google-api-client-android:2.7.0'
+    implementation 'com.google.apis:google-api-services-drive:v3-rev20240521-2.0.0'
+}
