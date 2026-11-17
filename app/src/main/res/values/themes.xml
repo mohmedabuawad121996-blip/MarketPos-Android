@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.MarketPos" parent="Theme.Material3.Dark.NoActionBar">
-        <item name="android:statusBarColor">#33434F</item>
-        <item name="android:windowBackground">#121214</item>
+    <style name="Theme.MarketPro" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">#047857</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorSecondary">#0F766E</item>
+        <item name="android:statusBarColor">#065F46</item>
+        <item name="android:windowBackground">#F1F5F4</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>
