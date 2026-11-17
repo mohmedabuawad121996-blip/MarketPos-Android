@@ -34,7 +34,7 @@ import java.util.List;
 /** تشغيل تقرير: خيارات التقرير (الفترة، الطرف، الصنف، …) ثم عرضه كجدول قابل للمشاركة */
 public class ReportViewActivity extends Activity {
     ReportApi.Def def; final ReportApi.Params p = new ReportApi.Params();
-    LinearLayout out; ReportApi.Table last; EditText noFrom, noTo, gold; CheckBox details;
+    LinearLayout out; ReportApi.Table last; Button productB, partyB; EditText noFrom, noTo, gold; CheckBox details;
 
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
@@ -45,7 +45,7 @@ public class ReportViewActivity extends Activity {
         body.addView(sv, new LinearLayout.LayoutParams(-1, 0, 1));
         LinearLayout opts = Ux.card(this); col.addView(opts);
         if (def.asOf) { p.from = LocalDate.of(2000, 1, 1); opts.addView(dateBtn("حتى تاريخ", false)); }
-        else if (def.dates) { p.from = LocalDate.now().withDayOfMonth(1); opts.addView(rangeBtn()); }
+        else if (def.dates) { p.from = getIntent().hasExtra("party") || getIntent().hasExtra("product") ? LocalDate.of(2000, 1, 1) : LocalDate.now().withDayOfMonth(1); opts.addView(rangeBtn()); }
         if (def.party >= 0) opts.addView(partyBtn());
         if (def.product) opts.addView(productBtn());
         if (def.wallet) opts.addView(walletBtn());
@@ -64,7 +64,10 @@ public class ReportViewActivity extends Activity {
         if (def.details) { details = new CheckBox(this); details.setText("تفصيلي (أصناف الفواتير)"); opts.addView(details); }
         Ux.add(opts, Ux.button(this, "عرض التقرير", Ux.PRIMARY, v -> run()), 8);
         out = new LinearLayout(this); out.setOrientation(LinearLayout.VERTICAL); Ux.add(col, out, 8);
-        if (!(def.party >= 0 && def.partyRequired) && !def.product && !def.nos) run();
+        p.product = getIntent().getLongExtra("product", p.product); p.party = getIntent().getLongExtra("party", p.party);
+        if (p.product != 0 && productB != null) { com.market.Model.Product x = Store.db.products.get(p.product); if (x != null) productB.setText("الصنف: " + x.name); }
+        if (p.party != 0 && partyB != null) partyB.setText((def.party == Model.CUSTOMER ? "العميل: " : "المورد: ") + Store.db.partyName(p.party));
+        if (!(def.party >= 0 && def.partyRequired && p.party == 0) && !(def.product && p.product == 0) && !def.nos) run();
     }
 
     Button opt(String text) { Button bt = Ux.button(this, text, Ux.TEAL, null); LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2); lp.topMargin = Ux.dp(this, 6); bt.setLayoutParams(lp); return bt; }
@@ -97,7 +100,7 @@ public class ReportViewActivity extends Activity {
     }
     View partyBtn() {
         String noun = def.party == Model.CUSTOMER ? "العميل" : "المورد";
-        Button bt = opt(noun + ": " + (def.partyRequired ? "اختر…" : "الكل"));
+        Button bt = opt(noun + ": " + (def.partyRequired ? "اختر…" : "الكل")); partyB = bt;
         bt.setOnClickListener(v -> {
             List<Party> ps = Store.db.parties(def.party); List<String> n = new ArrayList<>(); if (!def.partyRequired) n.add("— الكل —");
             for (Party x : ps) n.add(x.name);
@@ -106,7 +109,7 @@ public class ReportViewActivity extends Activity {
         return bt;
     }
     View productBtn() {
-        Button bt = opt("الصنف: اختر…");
+        Button bt = opt("الصنف: اختر…"); productB = bt;
         bt.setOnClickListener(v -> Ux.input(this, "ابحث عن الصنف", "الاسم أو الباركود", "", false, q -> {
             List<Product> ps = new ArrayList<>(); List<String> n = new ArrayList<>(); String s = q.toLowerCase();
             for (Product x : Store.db.products.values()) if (x.name.toLowerCase().contains(s) || (x.barcode != null && x.barcode.contains(s))) { ps.add(x); n.add(x.name); if (ps.size() >= 60) break; }
@@ -173,6 +176,7 @@ public class ReportViewActivity extends Activity {
         btns.addView(Ux.button(this, "PDF", Ux.RED, v -> Pdf.shareTable(this, r.title, period, r)), Ux.weight(1));
         btns.addView(gap()); btns.addView(Ux.button(this, "Excel", Ux.BLUE, v -> Share.csv(this, r.title, r.cols, r.rows)), Ux.weight(1));
         btns.addView(gap()); btns.addView(Ux.button(this, "نص", Ux.TEAL, v -> Share.text(this, r.title, asText(r, period))), Ux.weight(1));
+        btns.addView(gap()); btns.addView(Ux.button(this, "طباعة", Ux.SLATE, v -> Printer.printText(this, r.title, period + "\n" + (r.summary.isEmpty() ? "" : r.summary.replace("  |  ", "\n") + "\n") + "\n" + rowsText(r))), Ux.weight(1));
         Ux.add(out, btns, 8);
         if (r.rows.isEmpty()) { Ux.add(out, Ux.text(this, "لا توجد بيانات", 15, true, Ux.MUTED), 20); return; }
         TableLayout t = new TableLayout(this); t.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -198,6 +202,11 @@ public class ReportViewActivity extends Activity {
         }
         if (invId != null) row.setOnClickListener(v -> { Invoice i = Store.db.invoice(invId); if (i != null) InvoicesActivity.details(this, i, null); });
         return row;
+    }
+    static String rowsText(ReportApi.Table r) {
+        StringBuilder s = new StringBuilder();
+        for (String[] row : r.rows) { StringBuilder line = new StringBuilder(); for (int c = 0; c < row.length; c++) { if (row[c] == null || row[c].isEmpty()) continue; if (line.length() > 0) line.append("  |  "); line.append(row[c]); } s.append(line).append("\n- - - - - - - -\n"); }
+        return s.toString();
     }
     static String asText(ReportApi.Table r, String period) {
         StringBuilder s = new StringBuilder(r.title).append('\n').append(period).append('\n');

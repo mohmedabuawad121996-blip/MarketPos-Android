@@ -93,7 +93,7 @@ public class InvoicesActivity extends Activity {
             run.add(() -> { android.app.ProgressDialog pd = android.app.ProgressDialog.show(a, null, "جاري الإرسال…", true);
                 new Thread(() -> { String r = com.market.JoFotara.submit(inv); a.runOnUiThread(() -> { try { pd.dismiss(); } catch (Exception ignored) {} Ux.alert(a, r); if (after != null) after.run(); }); }).start(); }); }
         if (!inv.cancelled) {
-            if (Session.cap("cap:cancel") || Session.admin()) { acts.add("تعديل"); run.add(() -> a.startActivity(new Intent(a, InvoiceActivity.class).putExtra("type", type.name()).putExtra("edit", inv.id))); }
+            if ((Session.cap("cap:cancel") || Session.admin()) && !com.market.JoFotara.submitted(inv)) { acts.add("تعديل"); run.add(() -> a.startActivity(new Intent(a, InvoiceActivity.class).putExtra("type", type.name()).putExtra("edit", inv.id))); }
             if (type == InvType.SALE || type == InvType.PURCHASE) { acts.add("إرجاع من هذه الفاتورة"); InvType rt = type == InvType.SALE ? InvType.SALE_RETURN : InvType.PURCHASE_RETURN;
                 run.add(() -> a.startActivity(new Intent(a, InvoiceActivity.class).putExtra("type", rt.name()).putExtra("returnFrom", inv.id))); }
             if (type == InvType.QUOTE) { acts.add("تحويل إلى فاتورة مبيعات");

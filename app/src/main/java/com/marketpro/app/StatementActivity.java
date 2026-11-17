@@ -43,6 +43,8 @@ public class StatementActivity extends Activity {
         java.util.Collections.reverse(rows);
         ListView list = new ListView(this); list.setDivider(null);
         Ux.Adapter<Row> ad = new Ux.Adapter<>(this::row); list.setAdapter(ad); ad.set(rows);
+        list.setOnItemClickListener((pp, v, i, idd) -> { Row r = ad.getItem(i); com.market.Model.Invoice inv = r.l.refId == 0 ? null : Store.db.invoice(r.l.refId);
+            if (inv != null && r.l.ref.equals(inv.type.name())) InvoicesActivity.details(this, inv, null); });
         Ux.add(body, list, 6); list.setLayoutParams(new LinearLayout.LayoutParams(-1, 0, 1));
     }
     View row(Row r, int pos) {

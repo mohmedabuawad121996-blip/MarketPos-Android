@@ -69,18 +69,24 @@ public class PartiesActivity extends Activity {
 
     View row(Party p, int pos) {
         double v = bal.getOrDefault(p.id, 0.0);
-        return Ux.listRow(this, p.name, p.phone, Ui.m(v), v > 0 ? Ux.RED : Ux.PRIMARY);
+        String sub = p.phone + (p.creditLimit > 0 ? "  •  حد " + Ui.m(p.creditLimit) : "") + (kind == Model.CUSTOMER && com.market.Loyalty.enabled() ? "  •  نقاط " + com.market.Loyalty.balance(p.id) : "");
+        return Ux.listRow(this, p.name, sub, new Ui.Bal(kind, v).toString(), v > 0.0005 ? Ux.RED : Ux.GREEN);
     }
 
     void actions(Party p) {
         List<String> a = new ArrayList<>();
         a.add(kind == Model.CUSTOMER ? "سند قبض (استلام دفعة)" : "سند صرف (دفع للمورد)");
-        a.add("كشف الحساب"); a.add("تعديل البيانات"); a.add("إرسال الرصيد واتساب");
+        a.add("كشف الحساب"); a.add("تعديل البيانات"); a.add("إرسال الرصيد واتساب"); a.add("فواتير " + (kind == Model.CUSTOMER ? "العميل" : "المورد")); a.add("إيقاف / حذف");
         Ux.choose(this, p.name + " — الرصيد " + Ui.m(bal.getOrDefault(p.id, 0.0)), a, i -> {
             if (i == 0) voucher(p);
             else if (i == 1) startActivity(new Intent(this, StatementActivity.class).putExtra("kind", kind).putExtra("id", p.id));
             else if (i == 2) edit(p);
-            else WA.send(this, p.phone, com.market.WhatsApp.balanceText(p));
+            else if (i == 3) WA.send(this, p.phone, com.market.WhatsApp.balanceText(p));
+            else if (i == 4) { int k = com.market.ReportApi.indexOf(kind == Model.CUSTOMER ? "فواتير عميل" : "فواتير المشتريات للفترة"); startActivity(new Intent(this, ReportViewActivity.class).putExtra("index", k).putExtra("party", p.id)); }
+            else { if (!com.market.Session.admin()) { Ux.alert(this, "للمدير فقط"); return; }
+                double b = bal.getOrDefault(p.id, 0.0);
+                if (Math.abs(b) > 0.0005) { Ux.alert(this, "لا يمكن إيقاف حساب رصيده غير صفر (" + Ui.m(b) + ")"); return; }
+                Ux.confirm(this, "إيقاف " + p.name + "؟ (يبقى في الفواتير والتقارير السابقة)", () -> { p.active = false; Store.save(); load(); }); }
         });
     }
 
@@ -106,6 +112,8 @@ public class PartiesActivity extends Activity {
         EditText name = f(box, "الاسم", false, isNew ? "" : old.name), phone = f(box, "الهاتف", false, isNew ? "" : old.phone),
                 addr = f(box, "العنوان", false, isNew ? "" : old.address), limit = f(box, "حد الائتمان (0 = بلا حد)", true, isNew || old.creditLimit == 0 ? "" : Ui.q(old.creditLimit));
         EditText open = f(box, "الرصيد الافتتاحي", true, isNew || old.opening == 0 ? "" : Ui.q(old.opening));
+        EditText taxId = f(box, "الرقم الوطني / الضريبي (للفوترة الوطنية)", false, isNew ? "" : old.taxId);
+        EditText notesE = f(box, "ملاحظات", false, isNew ? "" : old.notes);
         ScrollView sv = new ScrollView(this); sv.addView(box);
         new AlertDialog.Builder(this).setTitle(isNew ? "إضافة" : "تعديل " + old.name).setView(sv).setPositiveButton("حفظ", (d, w) -> {
             String nm = name.getText().toString().trim(); if (nm.isEmpty()) { Ux.alert(this, "الاسم مطلوب"); return; }
@@ -113,7 +121,8 @@ public class PartiesActivity extends Activity {
                 Party p = isNew ? new Party() : old;
                 if (isNew) { p.id = Store.db.next("party"); p.kind = kind; }
                 p.name = nm; p.phone = phone.getText().toString().trim(); p.address = addr.getText().toString().trim();
-                p.creditLimit = Ui.num(limit.getText().toString());
+                p.creditLimit = Ui.num(limit.getText().toString()); p.taxId = taxId.getText().toString().trim(); p.notes = notesE.getText().toString().trim();
+                if (!p.taxId.isEmpty()) p.idType = p.taxId.length() == 10 && p.taxId.startsWith("9") ? "NIN" : "TN";
                 if (isNew) Store.db.parties.put(p.id, p);
                 Ops.setOpening(p, Ui.num(open.getText().toString()));
             });

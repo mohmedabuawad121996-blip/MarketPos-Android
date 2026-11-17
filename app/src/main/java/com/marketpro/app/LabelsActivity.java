@@ -44,6 +44,7 @@ public class LabelsActivity extends Activity {
             Ux.input(this, "عدد الملصقات لـ " + x.name + " (0 للحذف)", "العدد", String.valueOf(items.get(x)), true, s -> { int n = (int) Ui.num(s); if (n <= 0) items.remove(x); else items.put(x, n); load(); }); });
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, 0, 1); lp.topMargin = Ux.dp(this, 6); body.addView(list, lp);
         Ux.add(body, Ux.button(this, "إنشاء PDF للطباعة", Ux.PRIMARY, v -> make()), 6);
+        long pid = getIntent().getLongExtra("product", 0); if (pid != 0) { Product x = Store.db.products.get(pid); if (x != null) items.put(x, 1); }
         load();
     }
     String mode() { return Store.db.get("lblMode", "a4"); }

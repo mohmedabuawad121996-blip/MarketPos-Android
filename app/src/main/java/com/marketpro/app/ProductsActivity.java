@@ -29,7 +29,7 @@ import java.util.List;
 
 /** الأصناف والمخزون: بحث، إضافة وتعديل، جرد الكمية، وتسجيل التالف */
 public class ProductsActivity extends AppCompatActivity {
-    EditText search; TextView sum; Ux.Adapter<Product> adapter;
+    EditText search; TextView sum; long catFilter; int sortMode; android.widget.Button catB; Ux.Adapter<Product> adapter;
     ActivityResultLauncher<ScanOptions> scanner; EditText scanTarget;
 
     @Override protected void onCreate(Bundle b) {
@@ -43,7 +43,12 @@ public class ProductsActivity extends AppCompatActivity {
         body.addView(top);
         search.addTextChangedListener(new TextWatcher() { public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
             public void onTextChanged(CharSequence s, int a, int b, int c) {} public void afterTextChanged(Editable e) { load(); } });
-        Ux.add(body, Ux.button(this, "+ صنف جديد", Ux.PRIMARY, v -> edit(null, "")), 6);
+        LinearLayout bar = Ux.row(this);
+        bar.addView(Ux.button(this, "+ صنف جديد", Ux.GREEN, v -> edit(null, "")), Ux.weight(1));
+        catB = Ux.button(this, "التصنيف: الكل", Ux.TEAL, v -> pickCat()); LinearLayout.LayoutParams cbl = Ux.weight(1); cbl.setMarginStart(Ux.dp(this, 6)); bar.addView(catB, cbl);
+        android.widget.Button sortB = Ux.button(this, "ترتيب", Ux.SLATE, null); LinearLayout.LayoutParams sbl = Ux.weight(0.6f); sbl.setMarginStart(Ux.dp(this, 6)); bar.addView(sortB, sbl);
+        sortB.setOnClickListener(v -> Ux.choose(this, "ترتيب حسب", java.util.Arrays.asList("الإضافة", "الاسم", "الكمية (الأقل أولاً)", "السعر", "الأكثر قيمة بالمخزون"), i -> { sortMode = i; load(); }));
+        Ux.add(body, bar, 6);
         sum = Ux.text(this, "", 13, true, Ux.PRIMARY); Ux.add(body, sum, 6);
         ListView list = new ListView(this); list.setDivider(null);
         adapter = new Ux.Adapter<>(this::row); list.setAdapter(adapter);
@@ -61,10 +66,14 @@ public class ProductsActivity extends AppCompatActivity {
         List<Product> l = new ArrayList<>(); double cost = 0, sale = 0; int n = 0;
         for (Product p : Store.db.products.values()) {
             if (!p.active) continue;
+            if (catFilter != 0 && p.categoryId != catFilter) continue;
             if (p.qty > 0) { cost += p.qty * p.cost; sale += p.qty * p.price; } n++;
             if (!q.isEmpty() && !p.name.toLowerCase().contains(q) && !(p.barcode != null && p.barcode.contains(q))) continue;
-            if (l.size() < 300) l.add(p);
+            l.add(p);
         }
+        if (sortMode == 1) l.sort((a, b) -> a.name.compareTo(b.name)); else if (sortMode == 2) l.sort((a, b) -> Double.compare(a.qty, b.qty));
+        else if (sortMode == 3) l.sort((a, b) -> Double.compare(b.price, a.price)); else if (sortMode == 4) l.sort((a, b) -> Double.compare(b.qty * b.cost, a.qty * a.cost));
+        if (l.size() > 500) l = new ArrayList<>(l.subList(0, 500));
         adapter.set(l);
         sum.setText("الأصناف: " + n + "  |  المخزون بالتكلفة: " + Ui.m(cost) + "  |  بالبيع: " + Ui.m(sale));
     }
@@ -78,7 +87,13 @@ public class ProductsActivity extends AppCompatActivity {
 
     void actions(Product p) {
         List<String> a = new ArrayList<>(); a.add("تعديل الصنف"); a.add("جرد (تعديل الكمية الفعلية)"); a.add("تسجيل تالف");
+        a.add("حركة الصنف"); a.add("آخر أسعار الشراء"); a.add("طباعة ملصق باركود"); a.add("حذف الصنف");
         Ux.choose(this, p.name, a, i -> {
+            if (i == 3) { int k = com.market.ReportApi.indexOf("حركة صنف"); startActivity(new android.content.Intent(this, ReportViewActivity.class).putExtra("index", k).putExtra("product", p.id)); return; }
+            if (i == 4) { history(p); return; }
+            if (i == 5) { startActivity(new android.content.Intent(this, LabelsActivity.class).putExtra("product", p.id)); return; }
+            if (i == 6) { if (!Session.admin()) { Ux.alert(this, "الحذف للمدير فقط"); return; }
+                Ux.confirm(this, "حذف " + p.name + "؟\nإن كان للصنف حركات سيُوقف بدل الحذف.", () -> { final int[][] r = new int[1][]; if (Ux.run(this, () -> r[0] = Ops.deleteProducts(java.util.Collections.singletonList(p.id), true))) { Ux.toast(this, "تم"); load(); } }); return; }
             if (i == 0) edit(p, null);
             else if (i == 1) Ux.input(this, "الكمية الفعلية بالـ" + p.unit + " (الحالية " + Ui.q(p.qty) + ")", "الكمية", Ui.q(p.qty), true,
                     s -> { if (Ux.run(this, () -> Ops.adjust(p, Ui.num(s), "جرد من الهاتف"))) load(); });
@@ -107,6 +122,10 @@ public class ProductsActivity extends AppCompatActivity {
         EditText factor = f(box, "عدد الحبات في الوحدة الكبرى", true, isNew || old.factor <= 1 ? "" : Ui.q(old.factor));
         EditText bigP = f(box, "سعر بيع الوحدة الكبرى", true, isNew || old.bigPrice == 0 ? "" : String.valueOf(old.bigPrice));
         EditText bigC = f(box, "باركود الوحدة الكبرى", false, isNew ? "" : old.bigBarcode);
+        EditText extra = f(box, "باركودات إضافية (مفصولة بفاصلة)", false, isNew ? "" : old.extraBarcodes);
+        EditText plu = f(box, "رقم الصنف في الميزان (PLU)", false, isNew ? "" : old.plu);
+        android.widget.CheckBox weighed = new android.widget.CheckBox(this); weighed.setText("يُباع بالوزن (كغ)"); weighed.setChecked(!isNew && old.weighed); box.addView(weighed);
+        android.widget.CheckBox taxable = new android.widget.CheckBox(this); taxable.setText("خاضع للضريبة"); taxable.setChecked(isNew || old.taxable); box.addView(taxable);
         EditText open = isNew ? f(box, "الرصيد الافتتاحي (الكمية)", true, "") : null;
         ScrollView sv = new ScrollView(this); sv.addView(box);
         new AlertDialog.Builder(this).setTitle(isNew ? "صنف جديد" : "تعديل " + old.name).setView(sv)
@@ -121,9 +140,22 @@ public class ProductsActivity extends AppCompatActivity {
                     p.cost = Ui.num(cost.getText().toString()); p.price = Ui.num(price.getText().toString()); p.minQty = Ui.num(min.getText().toString());
                     p.bigUnit = bigU.getText().toString().trim(); double fct = Ui.num(factor.getText().toString()); p.factor = fct > 1 ? fct : 1;
                     p.bigPrice = Ui.num(bigP.getText().toString()); p.bigBarcode = bigCode;
+                    p.extraBarcodes = extra.getText().toString().trim(); p.plu = plu.getText().toString().trim(); p.weighed = weighed.isChecked(); p.taxable = taxable.isChecked();
                     if (isNew) { double q = Ui.num(open.getText().toString()); if (Ux.run(this, () -> Ops.addProduct(p, q))) { Ux.toast(this, "تمت إضافة الصنف"); load(); } }
                     else { Store.db.reindex(); Store.save(); load(); }
                 }).setNegativeButton("إلغاء", null).show();
+    }
+    void pickCat() {
+        List<Category> cs = Store.db.categories; List<String> n = new ArrayList<>(); n.add("— الكل —"); for (Category c : cs) n.add(c.name);
+        Ux.choose(this, "التصنيف", n, i -> { catFilter = i == 0 ? 0 : cs.get(i - 1).id; catB.setText("التصنيف: " + (i == 0 ? "الكل" : n.get(i))); load(); });
+    }
+    void history(Product p) {
+        List<com.market.Model.Invoice> inv = new ArrayList<>(); for (com.market.Model.Invoice i : Store.db.invoices) if (!i.cancelled && i.type == com.market.Model.InvType.PURCHASE) inv.add(i);
+        inv.sort((a, b) -> b.date.compareTo(a.date)); StringBuilder sb = new StringBuilder(); int n = 0;
+        outer: for (com.market.Model.Invoice i : inv) for (com.market.Model.InvLine l : i.lines) { if (l.productId != p.id || l.qty <= 0) continue;
+            sb.append(Ui.dt(i.date)).append("  •  ").append(Store.db.partyName(i.partyId)).append("\n    ").append(Ui.m(l.total() / l.qty)).append(" لكل ").append(l.unit).append("  (").append(Ui.q(l.qty)).append(")\n");
+            if (++n >= 10) break outer; }
+        Ux.alert(this, n == 0 ? "لا توجد مشتريات سابقة لهذا الصنف" : p.name + " — آخر " + n + " أسعار شراء:\n\n" + sb);
     }
     EditText f(LinearLayout box, String label, boolean num, String val) {
         box.addView(Ux.text(this, label, 13, false, Ux.MUTED));
