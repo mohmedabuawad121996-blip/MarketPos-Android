@@ -8,4 +8,8 @@
         <item name="android:windowBackground">#F1F5F4</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
+    <style name="Theme.MarketPro.Dark" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">#60A5FA</item>
+        <item name="android:windowBackground">#0F1626</item>
+    </style>
 </resources>

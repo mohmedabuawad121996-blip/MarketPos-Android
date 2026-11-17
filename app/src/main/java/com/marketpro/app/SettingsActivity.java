@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.InputType;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -118,14 +119,41 @@ public class SettingsActivity extends Activity {
         l.addView(Ux.text(this, "تُطبع كملف PDF من: المخزون ← طباعة ملصقات الباركود", 13, false, Ux.MUTED));
     }
     void look() {
-        LinearLayout c = card("لون البرنامج");
-        int cur = (int) Store.db.getD("phoneTheme", 0);
-        for (int i = 0; i < Ux.THEMES.length; i++) { final int k = i;
-            Ux.add(c, Ux.button(this, (i == cur ? "✓ " : "") + Ux.THEMES[i], Ux.THEME_COLORS[i][0], v -> { Store.db.set("phoneTheme", String.valueOf(k)); Store.save(); Ux.applyTheme(); recreate(); }), 6); }
+        LinearLayout c = card("الثيم (نفس ثيمات برنامج الكمبيوتر)");
+        String cur = Ux.themeName();
+        for (String t : Ux.THEMES) Ux.add(c, themeCard(this, t, t.equals(cur), () -> { Store.db.set("theme", t); Store.save(); Ux.applyTheme(); recreate(); }), 8);
         LinearLayout f = card("حجم الخط");
         String[] sizes = {"صغير", "عادي", "كبير", "كبير جداً"}; double[] vals = {0.9, 1.0, 1.15, 1.3};
         for (int i = 0; i < sizes.length; i++) { final int k = i;
             Ux.add(f, Ux.button(this, (Math.abs(Ux.FS - vals[i]) < 0.01 ? "✓ " : "") + sizes[i], Ux.TEAL, v -> { Store.db.set("phoneFont", String.valueOf(vals[k])); Store.save(); Ux.applyTheme(); recreate(); }), 6); }
+    }
+    /** بطاقة معاينة ثيم بألوانه: شريط جانبي + ترويسة + خلفية */
+    static View themeCard(Activity a, String name, boolean selected, Runnable pick) {
+        int[] saved = {Ux.PRIMARY, Ux.DARK, Ux.HEADER, Ux.SIDEBAR, Ux.SIDE_ITEM, Ux.SIDE_TEXT, Ux.BG, Ux.CARD, Ux.TEXT, Ux.MUTED, Ux.ROW, Ux.ROW_ALT, Ux.HEAD, Ux.SELECT, Ux.BORDER}; boolean dm = Ux.DARK_MODE;
+        Ux.theme(name); int side = Ux.SIDEBAR, head = Ux.HEADER, bg = Ux.BG, card = Ux.CARD, prim = Ux.PRIMARY, txt = Ux.TEXT;
+        Ux.PRIMARY = saved[0]; Ux.DARK = saved[1]; Ux.HEADER = saved[2]; Ux.SIDEBAR = saved[3]; Ux.SIDE_ITEM = saved[4]; Ux.SIDE_TEXT = saved[5]; Ux.BG = saved[6]; Ux.CARD = saved[7];
+        Ux.TEXT = saved[8]; Ux.MUTED = saved[9]; Ux.ROW = saved[10]; Ux.ROW_ALT = saved[11]; Ux.HEAD = saved[12]; Ux.SELECT = saved[13]; Ux.BORDER = saved[14]; Ux.DARK_MODE = dm;
+        LinearLayout r = new LinearLayout(a); r.setOrientation(LinearLayout.HORIZONTAL); r.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        r.setBackground(Ux.outline(bg, selected ? prim : Ux.BORDER, 10, a)); int pd = Ux.dp(a, selected ? 3 : 1); r.setPadding(pd, pd, pd, pd);
+        View sb = new View(a); sb.setBackground(Ux.round(side, 8, a)); r.addView(sb, new LinearLayout.LayoutParams(Ux.dp(a, 34), Ux.dp(a, 58)));
+        LinearLayout right = new LinearLayout(a); right.setOrientation(LinearLayout.VERTICAL); right.setPadding(Ux.dp(a, 6), 0, Ux.dp(a, 6), 0);
+        View hb = new View(a); hb.setBackground(Ux.round(head, 6, a)); right.addView(hb, new LinearLayout.LayoutParams(-1, Ux.dp(a, 16)));
+        LinearLayout l2 = new LinearLayout(a); l2.setOrientation(LinearLayout.HORIZONTAL); l2.setGravity(Gravity.CENTER_VERTICAL); l2.setPadding(0, Ux.dp(a, 6), 0, 0);
+        TextView t = Ux.text(a, (selected ? "✓ " : "") + name, 15, true, txt); l2.addView(t, new LinearLayout.LayoutParams(0, -2, 1));
+        View dot = new View(a); dot.setBackground(Ux.round(prim, 9, a)); l2.addView(dot, new LinearLayout.LayoutParams(Ux.dp(a, 18), Ux.dp(a, 18)));
+        View dot2 = new View(a); dot2.setBackground(Ux.outline(card, 0x22000000, 9, a)); LinearLayout.LayoutParams d2 = new LinearLayout.LayoutParams(Ux.dp(a, 18), Ux.dp(a, 18)); d2.setMarginStart(Ux.dp(a, 4)); l2.addView(dot2, d2);
+        right.addView(l2); r.addView(right, new LinearLayout.LayoutParams(0, -2, 1));
+        r.setOnClickListener(v -> pick.run());
+        return r;
+    }
+    /** نافذة سريعة لاختيار الثيم (زر اللوحة في الرئيسية) */
+    public static void pickTheme(Activity a, Runnable after) {
+        LinearLayout box = new LinearLayout(a); box.setOrientation(LinearLayout.VERTICAL); int p = Ux.dp(a, 14); box.setPadding(p, p, p, p);
+        android.widget.ScrollView sv = new android.widget.ScrollView(a); sv.addView(box);
+        android.app.AlertDialog d = new android.app.AlertDialog.Builder(a).setTitle("المظهر والثيمات").setView(sv).setNegativeButton("إغلاق", null).create();
+        String cur = Ux.themeName();
+        for (String t : Ux.THEMES) Ux.add(box, themeCard(a, t, t.equals(cur), () -> { Store.db.set("theme", t); Store.save(); Ux.applyTheme(); d.dismiss(); after.run(); }), 8);
+        d.show();
     }
     void password() {
         LinearLayout pass = card("تغيير كلمة المرور — " + Session.name());

@@ -21,5 +21,11 @@ public class App extends Application {
         };
         String id = android.provider.Settings.Secure.getString(getContentResolver(), android.provider.Settings.Secure.ANDROID_ID);
         com.market.License.rawDeviceId = id == null ? "" : id;
+        // الثيمات الداكنة: نوافذ الحوار بألوان داكنة أيضاً
+        registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
+            public void onActivityCreated(android.app.Activity a, android.os.Bundle b) { if (Ux.DARK_MODE) a.setTheme(R.style.Theme_MarketPro_Dark); }
+            public void onActivityStarted(android.app.Activity a) {} public void onActivityResumed(android.app.Activity a) {} public void onActivityPaused(android.app.Activity a) {}
+            public void onActivityStopped(android.app.Activity a) {} public void onActivitySaveInstanceState(android.app.Activity a, android.os.Bundle b) {} public void onActivityDestroyed(android.app.Activity a) {}
+        });
     }
 }

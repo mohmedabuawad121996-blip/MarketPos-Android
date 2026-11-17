@@ -176,11 +176,11 @@ public class ReportViewActivity extends Activity {
         Ux.add(out, btns, 8);
         if (r.rows.isEmpty()) { Ux.add(out, Ux.text(this, "لا توجد بيانات", 15, true, Ux.MUTED), 20); return; }
         TableLayout t = new TableLayout(this); t.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        t.addView(tr(r.cols, Ux.PRIMARY, 0xFFFFFFFF, true, null));
+        t.addView(tr(r.cols, Ux.HEAD, Ux.TEXT, true, null));
         for (int i = 0; i < r.rows.size(); i++) {
             String[] row = r.rows.get(i); boolean total = row.length > 1 && (String.join("", row).contains("الإجمالي") || (row[0] != null && row[0].startsWith("المجموع")));
             Long invId = r.inv.get(i);
-            t.addView(tr(row, total ? 0xFFD1FAE5 : i % 2 == 0 ? Ux.CARD : 0xFFF8FAFC, total ? Ux.DARK : invId != null ? Ux.BLUE : Ux.TEXT, total, invId));
+            t.addView(tr(row, total ? Ux.SELECT : i % 2 == 0 ? Ux.ROW : Ux.ROW_ALT, total ? Ux.TEXT : invId != null ? Ux.PRIMARY : Ux.TEXT, total, invId));
         }
         HorizontalScrollView h = new HorizontalScrollView(this); h.addView(t);
         Ux.add(out, h, 8);
