@@ -33,6 +33,7 @@ public class ExpensesActivity extends Activity {
             Ux.confirm(this, "إلغاء هذا المصروف وإرجاع مبلغه للصندوق؟", () -> { if (Ux.run(this, () -> Ops.cancel(e))) load(); }); });
         body.addView(list, new LinearLayout.LayoutParams(-1, 0, 1));
         load();
+        if ("add".equals(getIntent().getStringExtra("do"))) add();
     }
     void load() {
         List<Expense> l = new ArrayList<>(); double month = 0; LocalDateTime m0 = Ui.start(LocalDate.now().withDayOfMonth(1));

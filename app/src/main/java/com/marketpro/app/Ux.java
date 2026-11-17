@@ -27,7 +27,18 @@ import java.util.List;
 public final class Ux {
     private Ux() {}
 
-    public static final int PRIMARY = 0xFF047857, DARK = 0xFF065F46, TEAL = 0xFF0F766E, BLUE = 0xFF2563EB, RED = 0xFFDC2626,
+    /** لون الثيم (يتغيّر من الإعدادات ← المظهر) */
+    public static int PRIMARY = 0xFF047857, DARK = 0xFF065F46;
+    /** مقياس حجم الخط */
+    public static float FS = 1f;
+    public static final String[] THEMES = {"أخضر طبيعي", "أزرق", "بنفسجي", "برتقالي", "رمادي داكن", "عنابي"};
+    static final int[][] THEME_COLORS = {{0xFF047857, 0xFF065F46}, {0xFF1D4ED8, 0xFF1E3A8A}, {0xFF6D28D9, 0xFF4C1D95}, {0xFFC2410C, 0xFF9A3412}, {0xFF334155, 0xFF0F172A}, {0xFF9F1239, 0xFF881337}};
+    public static void applyTheme() {
+        int t = (int) com.market.Store.db.getD("phoneTheme", 0); if (t < 0 || t >= THEME_COLORS.length) t = 0;
+        PRIMARY = THEME_COLORS[t][0]; DARK = THEME_COLORS[t][1];
+        FS = (float) Math.max(0.8, Math.min(1.4, com.market.Store.db.getD("phoneFont", 1)));
+    }
+    public static final int TEAL = 0xFF0F766E, BLUE = 0xFF2563EB, RED = 0xFFDC2626,
             ORANGE = 0xFFEA580C, PURPLE = 0xFF7C3AED, GREEN = 0xFF16A34A, BG = 0xFFF1F5F4, CARD = 0xFFFFFFFF, TEXT = 0xFF0F172A,
             MUTED = 0xFF64748B, BORDER = 0xFFE2E8F0;
 
@@ -68,21 +79,21 @@ public final class Ux {
     }
 
     public static TextView text(Context c, String s, float sp, boolean bold, int color) {
-        TextView t = new TextView(c); t.setText(s); t.setTextSize(sp); t.setTextColor(color);
+        TextView t = new TextView(c); t.setText(s); t.setTextSize(sp * FS); t.setTextColor(color);
         if (bold) t.setTypeface(Typeface.DEFAULT_BOLD);
         t.setTextDirection(View.TEXT_DIRECTION_ANY_RTL);
         return t;
     }
 
     public static Button button(Context c, String s, int color, View.OnClickListener l) {
-        Button b = new Button(c); b.setText(s); b.setTextColor(Color.WHITE); b.setTextSize(15); b.setAllCaps(false);
+        Button b = new Button(c); b.setText(s); b.setTextColor(Color.WHITE); b.setTextSize(15 * FS); b.setAllCaps(false);
         b.setTypeface(Typeface.DEFAULT_BOLD); b.setBackground(round(color, 10, c)); b.setOnClickListener(l);
         int p = dp(c, 10); b.setPadding(p, p / 2, p, p / 2); b.setMinHeight(dp(c, 46));
         return b;
     }
 
     public static EditText field(Context c, String hint, boolean number) {
-        EditText e = new EditText(c); e.setHint(hint); e.setTextSize(16); e.setSingleLine(true);
+        EditText e = new EditText(c); e.setHint(hint); e.setTextSize(16 * FS); e.setSingleLine(true);
         e.setBackground(outline(Color.WHITE, BORDER, 10, c)); int p = dp(c, 10); e.setPadding(p, p, p, p);
         e.setTextDirection(View.TEXT_DIRECTION_ANY_RTL);
         if (number) e.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);

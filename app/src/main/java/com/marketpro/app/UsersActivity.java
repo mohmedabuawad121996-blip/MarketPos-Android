@@ -52,6 +52,15 @@ public class UsersActivity extends Activity {
         Set<String> cur = isNew ? Session.defaults() : new HashSet<>(Session.permsOf(u));
         List<CheckBox> caps = new ArrayList<>();
         for (String[] c : CAPS) { CheckBox x = new CheckBox(this); x.setText(c[1]); x.setChecked(cur.contains(c[0])); x.setTag(c[0]); caps.add(x); box.addView(x); }
+        Set<String> screens = new HashSet<>(cur); for (String[] c : CAPS) screens.remove(c[0]);
+        List<String> allScreens = new ArrayList<>(); for (Menus.Section sc : Menus.all()) if (!sc.adminOnly) for (Menus.Item it : sc.items) if (!allScreens.contains(it.title)) allScreens.add(it.title);
+        Ux.add(box, Ux.button(this, "الشاشات المسموحة للكاشير", Ux.TEAL, v -> {
+            boolean[] on = new boolean[allScreens.size()]; for (int i = 0; i < on.length; i++) on[i] = screens.contains(allScreens.get(i));
+            new AlertDialog.Builder(this).setTitle("الشاشات المسموحة").setMultiChoiceItems(allScreens.toArray(new String[0]), on, (d, i, c) -> on[i] = c)
+                    .setPositiveButton("تم", (d, w) -> { screens.clear(); for (int i = 0; i < on.length; i++) if (on[i]) screens.add(allScreens.get(i)); })
+                    .setNeutralButton("الافتراضي", (d, w) -> { screens.clear(); screens.addAll(Session.defaults()); for (String[] c : CAPS) screens.remove(c[0]); })
+                    .setNegativeButton("إلغاء", null).show();
+        }), 8);
         android.widget.ScrollView sv = new android.widget.ScrollView(this); sv.addView(box);
         new AlertDialog.Builder(this).setTitle(isNew ? "مستخدم جديد" : u.name).setView(sv).setPositiveButton("حفظ", (d, w) -> {
             String nm = name.getText().toString().trim(), un = user.getText().toString().trim(), pw = pass.getText().toString();
@@ -62,8 +71,8 @@ public class UsersActivity extends Activity {
             if (wasAdmin && (!admin.isChecked() || !active.isChecked())) { int admins = 0; for (User x : Store.db.users) if (x.admin() && x.active) admins++;
                 if (admins <= 1) { Ux.alert(this, "يجب أن يبقى مدير فعّال واحد على الأقل"); return; } }
             u.name = nm; u.username = un; if (!pw.isEmpty()) u.passHash = Session.hash(pw); u.role = admin.isChecked() ? "مدير" : "كاشير"; u.active = active.isChecked();
-            Set<String> perms = new HashSet<>(Session.permsOf(u)); if (isNew) perms = Session.defaults();
-            for (CheckBox x : caps) { if (x.isChecked()) perms.add((String) x.getTag()); else perms.remove((String) x.getTag()); }
+            Set<String> perms = new HashSet<>(screens);
+            for (CheckBox x : caps) if (x.isChecked()) perms.add((String) x.getTag());
             u.perms = perms.isEmpty() ? "-" : String.join("\n", perms);
             if (isNew) { u.id = Store.db.next("user"); Store.db.users.add(u); }
             Store.save(); ad.set(Store.db.users);

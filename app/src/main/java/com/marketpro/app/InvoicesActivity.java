@@ -83,9 +83,15 @@ public class InvoicesActivity extends Activity {
         if (inv.tax > 0) b.append("\nالضريبة: ").append(Ui.m(inv.tax));
         b.append("\nالإجمالي: ").append(Ui.m(inv.total)).append("\nالمدفوع: ").append(Ui.m(inv.paid));
         if (inv.cancelled) b.append("\n\n(ملغاة)");
+        if (com.market.JoFotara.enabled() && com.market.JoFotara.applies(inv)) b.append("\nالفوترة الوطنية: ").append(com.market.JoFotara.statusText(inv)).append(inv.einvMsg == null || inv.einvMsg.isEmpty() ? "" : "\n" + inv.einvMsg);
         List<String> acts = new ArrayList<>(); List<Runnable> run = new ArrayList<>();
         acts.add("مشاركة كنص"); run.add(() -> Share.invoice(a, inv));
         acts.add("فاتورة PDF (طباعة / مشاركة)"); run.add(() -> Pdf.invoice(a, inv));
+        acts.add("طباعة على الطابعة (بلوتوث)"); run.add(() -> Printer.printInvoice(a, inv));
+        acts.add("إرسال واتساب"); run.add(() -> { com.market.Model.Party p = inv.partyId == 0 ? null : Store.db.party(inv.partyId); WA.send(a, p == null ? "" : p.phone, com.market.WhatsApp.invoiceText(inv)); });
+        if (com.market.JoFotara.enabled() && com.market.JoFotara.applies(inv) && !com.market.JoFotara.submitted(inv) && !inv.cancelled) { acts.add("إرسال للفوترة الوطنية");
+            run.add(() -> { android.app.ProgressDialog pd = android.app.ProgressDialog.show(a, null, "جاري الإرسال…", true);
+                new Thread(() -> { String r = com.market.JoFotara.submit(inv); a.runOnUiThread(() -> { try { pd.dismiss(); } catch (Exception ignored) {} Ux.alert(a, r); if (after != null) after.run(); }); }).start(); }); }
         if (!inv.cancelled) {
             if (Session.cap("cap:cancel") || Session.admin()) { acts.add("تعديل"); run.add(() -> a.startActivity(new Intent(a, InvoiceActivity.class).putExtra("type", type.name()).putExtra("edit", inv.id))); }
             if (type == InvType.SALE || type == InvType.PURCHASE) { acts.add("إرجاع من هذه الفاتورة"); InvType rt = type == InvType.SALE ? InvType.SALE_RETURN : InvType.PURCHASE_RETURN;

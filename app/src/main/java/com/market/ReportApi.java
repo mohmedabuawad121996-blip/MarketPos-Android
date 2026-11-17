@@ -49,4 +49,6 @@ public final class ReportApi {
     }
     /** هل في البرنامج أكثر من مستودع؟ */
     public static boolean multiWh() { return Store.db.multiWh(); }
+    /** رقم التقرير من اسمه (-1 إن لم يوجد) */
+    public static int indexOf(String name) { for (int i = 0; i < ReportsUI.REPS.size(); i++) if (ReportsUI.REPS.get(i).name.equals(name)) return i; return -1; }
 }

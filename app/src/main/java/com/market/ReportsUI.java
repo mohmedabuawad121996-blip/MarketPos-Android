@@ -90,10 +90,12 @@ public class ReportsUI {
         REPS.add(new Rep(G1, "أصناف تحت حد الطلب", ReportsStock::lowStock).noDates());
         REPS.add(new Rep(G1, "المنتجات حسب تاريخ الانتهاء", ReportsStock::expiryReport).noDates().category());
         REPS.add(new Rep(G1, "المنتجات التالفة", ReportsStock::damages));
+        REPS.add(new Rep(G1, "منتجات أقل من سعر التكلفة", ReportsUI::belowCost).noDates().category());
         REPS.add(new Rep(G1, "أصناف ناقصة البيانات", ReportsStock::missingData).noDates());
 
         // ===== العملاء والذمم =====
         REPS.add(new Rep(G4, "أرصدة العملاء", p -> balances(Model.CUSTOMER)).noDates());
+        REPS.add(new Rep(G4, "الذمم (الفواتير الآجلة)", p -> remainingInvoices(p, Model.CUSTOMER)).noDates().party(Model.CUSTOMER, false));
         REPS.add(new Rep(G4, "أكبر العملاء المدينين", ReportsParties::topDebtors).noDates());
         REPS.add(new Rep(G4, "أعمار ذمم العملاء", ReportsStock::agingCustomers).noDates());
         REPS.add(new Rep(G4, "كشف حساب عميل", p -> statement(p, Model.CUSTOMER)).party(Model.CUSTOMER, true).details());
@@ -450,5 +452,12 @@ public class ReportsUI {
         r.add("يُنصح بمراجعة جهة شرعية موثوقة لاعتماد المبلغ النهائي.", "", "");
         r.summary = "وعاء الزكاة: " + Ui.m(base) + "  |  الزكاة الواجبة: " + Ui.m(z) + " " + db().get("currency", "");
         return r;
+    }
+    /** أصناف سعر بيعها أقل من تكلفتها */
+    static Result belowCost(P p) {
+        Result r = new Result("الباركود", "الصنف", "التكلفة", "سعر البيع", "الفرق", "الكمية");
+        for (Product x : db().products.values()) { if (!x.active || x.price <= 0 || x.cost <= x.price) continue; if (p.category != 0 && x.categoryId != p.category) continue;
+            r.add(x.barcode, x.name, x.cost, x.price, Ui.r(x.price - x.cost), Ui.q(x.qty)); }
+        r.summary = "عدد الأصناف: " + r.rows.size(); return r;
     }
 }

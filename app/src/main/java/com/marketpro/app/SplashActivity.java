@@ -27,7 +27,7 @@ public class SplashActivity extends Activity {
         if (App.loaded) { go(); return; }
         new Thread(() -> {
             try {
-                Store.load(); Ops.ensureWallets(); Ops.ensureWarehouses(); Session.ensureAdmin();
+                Store.load(); Ops.ensureWallets(); Ops.ensureWarehouses(); Session.ensureAdmin(); Ux.applyTheme();
                 App.loaded = true;
             } catch (Throwable t) { App.loadError = t; }
             new Handler(Looper.getMainLooper()).post(() -> {

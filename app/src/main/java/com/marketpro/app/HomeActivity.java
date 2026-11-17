@@ -47,24 +47,14 @@ public class HomeActivity extends Activity {
         if (low > 0) { TextView t = Ux.text(this, low + " صنف تحت الحد الأدنى", 13, true, Color.WHITE); t.setPadding(p, p / 2, p, p / 2);
             t.setBackground(Ux.round(Ux.ORANGE, 14, this)); LinearLayout w = Ux.row(this); w.addView(t); body.addView(w); }
 
-        List<Tile> tiles = Arrays.asList(
-                new Tile("المبيعات", "🛒", 0xFF16A34A, () -> menu("المبيعات", new String[]{"نقطة البيع (فاتورة مبيعات)", "مرتجع مبيعات", "عرض سعر", "سجل فواتير المبيعات", "سجل مرتجعات المبيعات", "سجل عروض الأسعار"},
-                        i -> { InvType[] t = {InvType.SALE, InvType.SALE_RETURN, InvType.QUOTE}; if (i < 3) inv(t[i]); else log(t[i - 3]); })),
-                new Tile("المشتريات", "📦", 0xFF047857, () -> menu("المشتريات", new String[]{"فاتورة مشتريات", "مرتجع مشتريات", "تسجيل طلبية (لا تدخل المخزون)", "سجل فواتير المشتريات", "سجل مرتجعات المشتريات", "سجل الطلبيات"},
-                        i -> { InvType[] t = {InvType.PURCHASE, InvType.PURCHASE_RETURN, InvType.ORDER}; if (i < 3) inv(t[i]); else log(t[i - 3]); })),
-                new Tile("المخزون", "🏷", 0xFF0D9488, () -> open(ProductsActivity.class)),
-                new Tile("العملاء", "👥", 0xFF7C3AED, () -> parties(Model.CUSTOMER)),
-                new Tile("الموردين", "🚚", 0xFFEA580C, () -> parties(Model.SUPPLIER)),
-                new Tile("المصروفات", "💸", 0xFFDC2626, () -> open(ExpensesActivity.class)),
-                new Tile("الصندوق", "👛", 0xFFA16207, () -> open(CashActivity.class)),
-                new Tile("التقارير", "📊", 0xFF2563EB, () -> open(ReportsActivity.class)),
-                new Tile("الورديات", "🧾", 0xFF0891B2, () -> open(ShiftsActivity.class)),
-                new Tile("العروض", "🏷", 0xFFDB2777, () -> open(OffersActivity.class)),
-                new Tile("أدوات ومعالجات", "🛠", 0xFF4F46E5, () -> open(ToolsActivity.class)),
-                new Tile("المحاسبة", "📒", 0xFF0F766E, () -> { if (com.market.Session.admin()) open(JournalActivity.class); else Ux.alert(this, "المحاسبة للمدير فقط"); }),
-                new Tile("المستخدمون", "👤", 0xFF64748B, () -> { if (com.market.Session.admin()) open(UsersActivity.class); else Ux.alert(this, "للمدير فقط"); }),
-                new Tile("الإعدادات", "⚙", 0xFF475569, () -> open(SettingsActivity.class)),
-                new Tile("النسخ الاحتياطي", "💾", 0xFF334155, () -> open(BackupActivity.class)));
+        List<Tile> tiles = new ArrayList<>();
+        List<Menus.Section> secs = Menus.all();
+        for (int k = 0; k < secs.size(); k++) { Menus.Section sc = secs.get(k); final int idx = k;
+            if (sc.adminOnly && !com.market.Session.admin()) continue;
+            boolean any = com.market.Session.admin(); for (Menus.Item it : sc.items) if (com.market.Session.can(it.title)) any = true;
+            if (!any) continue;
+            tiles.add(new Tile(sc.title, sc.icon, sc.color, () -> startActivity(new Intent(this, MenuActivity.class).putExtra("sec", idx)))); }
+        tiles.add(0, new Tile("نقطة البيع", "🧾", 0xFF15803D, () -> inv(InvType.SALE)));
         LinearLayout line = null;
         for (int i = 0; i < tiles.size(); i++) {
             if (i % 2 == 0) { line = Ux.row(this); body.addView(line, Ux.gap(this, 8)); }

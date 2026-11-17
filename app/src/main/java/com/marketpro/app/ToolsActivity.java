@@ -59,6 +59,9 @@ public class ToolsActivity extends AppCompatActivity {
             item(body, "حذف كل الحركات (إبقاء الأصناف والحسابات)", Ux.RED, () -> danger("سيُحذف كل شيء من فواتير وسندات ومصروفات وحركات، وتُصفّر الكميات. تُحفظ نسخة احتياطية أولاً.", () -> Ops.wipeTransactions()));
             item(body, "تصفير البرنامج لبداية جديدة", Ux.RED, () -> danger("تصفير كامل: الحركات والأرصدة الافتتاحية. تُحفظ نسخة احتياطية أولاً.", () -> Ops.resetProgram(true)));
         }
+        String d = getIntent().getStringExtra("do");
+        if ("price".equals(d)) { ScanOptions o = new ScanOptions(); o.setPrompt("وجّه الكاميرا إلى الباركود (أو ارجع للبحث بالاسم)"); o.setBeepEnabled(true); scanner.launch(o); }
+        else if ("expiry".equals(d)) expiry(); else if ("suggest".equals(d)) suggest(); else if ("bulk".equals(d)) bulkPrice();
     }
     void sec(LinearLayout body, String t) { Ux.add(body, Ux.text(this, t, 16, true, Ux.TEXT), 14); }
     void item(LinearLayout body, String t, int c, Runnable r) { Ux.add(body, Ux.button(this, t, c, v -> r.run()), 6); }

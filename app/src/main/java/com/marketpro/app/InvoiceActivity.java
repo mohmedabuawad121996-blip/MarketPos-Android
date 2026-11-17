@@ -40,8 +40,8 @@ public class InvoiceActivity extends AppCompatActivity {
     InvType type; Invoice editing;
     final List<InvLine> lines = new ArrayList<>();
     long partyId, refId; long walletId;
-    double invDiscount;
-    Button partyBtn, heldB; EditText code; TextView subT, discT, taxT, totalT; Ux.Adapter<InvLine> adapter;
+    double invDiscount; long redeemPts; double redeemVal;
+    Button partyBtn, heldB, ptsB; EditText code; TextView subT, discT, taxT, totalT; Ux.Adapter<InvLine> adapter;
     ActivityResultLauncher<ScanOptions> scanner;
 
     boolean buy() { return type == InvType.PURCHASE || type == InvType.PURCHASE_RETURN || type == InvType.ORDER; }
@@ -54,7 +54,8 @@ public class InvoiceActivity extends AppCompatActivity {
         walletId = Store.db.defaultWallet();
         long editId = getIntent().getLongExtra("edit", 0);
         if (editId != 0) { editing = Store.db.invoice(editId);
-            if (editing != null) { for (InvLine l : editing.lines) lines.add(l.copy()); partyId = editing.partyId; refId = editing.refId; invDiscount = editing.discount; walletId = editing.walletId; } }
+            if (editing != null) { for (InvLine l : editing.lines) lines.add(l.copy()); partyId = editing.partyId; refId = editing.refId; invDiscount = Ui.r(editing.discount - editing.pointsValue, 3); walletId = editing.walletId;
+                redeemPts = (long) editing.pointsUsed; redeemVal = editing.pointsValue; } }
         long from = getIntent().getLongExtra("returnFrom", 0);
         scanner = registerForActivityResult(new ScanContract(), r -> { if (r != null && r.getContents() != null) addCode(r.getContents()); });
 
@@ -63,6 +64,7 @@ public class InvoiceActivity extends AppCompatActivity {
         LinearLayout top = Ux.row(this);
         partyBtn = Ux.button(this, "", Ux.TEAL, v -> pickParty()); top.addView(partyBtn, Ux.weight(1));
         if (isReturn()) { Button imp = Ux.button(this, "من فاتورة", Ux.PURPLE, v -> importFrom()); LinearLayout.LayoutParams lp = Ux.weight(0.6f); lp.setMarginStart(Ux.dp(this, 6)); top.addView(imp, lp); }
+        if (type == InvType.SALE && com.market.Loyalty.enabled()) { ptsB = Ux.button(this, "النقاط", Ux.ORANGE, v -> redeem()); LinearLayout.LayoutParams lp = Ux.weight(0.6f); lp.setMarginStart(Ux.dp(this, 6)); top.addView(ptsB, lp); }
         body.addView(top);
         // الباركود
         LinearLayout scan = Ux.row(this);
@@ -109,10 +111,16 @@ public class InvoiceActivity extends AppCompatActivity {
     }
     void submitCode() {
         String s = code.getText().toString().trim(); if (s.isEmpty()) return;
-        if (Store.db.byBarcode(s) != null) { addCode(s); code.setText(""); } else search(s);
+        if (Store.db.byBarcode(s) != null || com.market.Scale.looksLike(s)) { addCode(s); code.setText(""); } else search(s);
     }
     void addCode(String c) {
         Product p = Store.db.byBarcode(c.trim());
+        if (p == null && com.market.Scale.looksLike(c.trim())) {
+            com.market.Scale.Hit h = com.market.Scale.parse(c.trim());
+            if (h != null) { InvLine l = new InvLine(); l.productId = h.p.id; l.name = h.p.name; l.barcode = h.p.barcode; l.unit = h.p.weighed ? "كغ" : h.p.unit; l.factor = 1;
+                l.qty = h.qty; l.price = buy() ? h.p.cost : h.p.price; l.cost = h.p.cost; l.taxable = h.p.taxable; lines.add(l); refresh(); return; }
+            Ux.alert(this, "باركود ميزان لصنف غير معرّف.\nرقم الصنف في الميزان: " + c.trim().substring(2, 2 + com.market.Scale.codeLen()) + "\nأدخله في خانة «رقم الميزان» للصنف من برنامج الكمبيوتر."); return;
+        }
         if (p == null) { Ux.confirm(this, "الباركود " + c + " غير موجود. إضافة صنف جديد؟", () -> startActivity(new Intent(this, ProductsActivity.class).putExtra("newCode", c.trim()))); return; }
         add(p, Store.isBigCode(p, c));
     }
@@ -174,6 +182,7 @@ public class InvoiceActivity extends AppCompatActivity {
             else if (i == 1) { Ux.input(this, "الاسم", "الاسم", "", false, s -> { if (s.isEmpty()) return;
                 Party p = new Party(); p.id = Store.db.next("party"); p.kind = partyKind(); p.name = s; Store.db.parties.put(p.id, p); Store.save(); partyId = p.id; refresh(); }); return; }
             else partyId = ps.get(i - 2).id;
+            redeemPts = 0; redeemVal = 0;
             refresh();
         });
     }
@@ -196,7 +205,7 @@ public class InvoiceActivity extends AppCompatActivity {
     // ------------------------------------------------ المجاميع والحفظ
     Invoice build() {
         Invoice inv = new Invoice(); inv.type = type; inv.partyId = partyId; inv.partyName = partyId == 0 ? "" : Store.db.partyName(partyId);
-        inv.refId = refId; inv.discount = invDiscount; inv.walletId = walletId; inv.user = Session.name();
+        inv.refId = refId; inv.discount = Ui.r(invDiscount + redeemVal, 3); inv.pointsUsed = redeemPts; inv.pointsValue = redeemVal; inv.walletId = walletId; inv.user = Session.name();
         for (InvLine l : lines) inv.lines.add(l.copy());
         if (editing != null) inv.date = editing.date;
         Ops.compute(inv); return inv;
@@ -211,7 +220,24 @@ public class InvoiceActivity extends AppCompatActivity {
         setPair(taxT, "الضريبة", Ui.m(inv.tax), Ux.MUTED);
         setPair(totalT, "الإجمالي", Ui.m(inv.total) + " " + Store.db.get("currency", "د.أ"), Ux.PRIMARY);
         totalT.setTextSize(20);
+        if (ptsB != null) ptsB.setText(redeemPts > 0 ? "نقاط: " + redeemPts : partyId == 0 ? "النقاط" : "النقاط (" + com.market.Loyalty.balance(partyId) + ")");
         if (heldB != null) heldB.setText("تعليق / المعلّقة (" + heldCount() + ")");
+    }
+    /** استبدال نقاط العميل كخصم */
+    void redeem() {
+        if (partyId == 0) { Ux.alert(this, "اختر العميل أولاً"); return; }
+        if (redeemPts > 0) { Ux.confirm(this, "إلغاء استبدال " + redeemPts + " نقطة؟", () -> { redeemPts = 0; redeemVal = 0; refresh(); }); return; }
+        long bal = com.market.Loyalty.balance(partyId);
+        if (bal < com.market.Loyalty.minRedeem()) { Ux.alert(this, "رصيد العميل: " + bal + " نقطة\nأقل عدد للاستبدال: " + com.market.Loyalty.minRedeem()); return; }
+        if (com.market.Loyalty.value() <= 0) { Ux.alert(this, "حدد قيمة النقطة من الإعدادات"); return; }
+        Invoice inv = build();
+        double room = Ops.noLoss() ? Ops.maxInvoiceDiscount(inv) - inv.discount : inv.subtotal - inv.discount;
+        long maxP = Math.min(bal, (long) Math.floor(Math.max(0, room) / com.market.Loyalty.value() + 1e-9));
+        if (maxP < com.market.Loyalty.minRedeem()) { Ux.alert(this, "قيمة الفاتورة لا تسمح باستبدال النقاط"); return; }
+        Ux.input(this, "رصيد العميل " + bal + " نقطة (النقطة = " + Ui.m(com.market.Loyalty.value()) + ")\nأقصى استبدال: " + maxP + " نقطة = " + Ui.m(maxP * com.market.Loyalty.value()), "عدد النقاط", String.valueOf(maxP), true, x -> {
+            long n = (long) Ui.num(x);
+            if (n < com.market.Loyalty.minRedeem() || n > maxP) { Ux.alert(this, "أدخل عدداً بين " + com.market.Loyalty.minRedeem() + " و " + maxP); return; }
+            redeemPts = n; redeemVal = Ui.r(n * com.market.Loyalty.value(), 3); refresh(); });
     }
     int heldCount() { int n = 0; for (Invoice h : Store.db.held) if (h.type == type) n++; return n; }
     /** تعليق الفاتورة الحالية أو استرجاع فاتورة معلّقة */
@@ -233,7 +259,7 @@ public class InvoiceActivity extends AppCompatActivity {
     void setPair(TextView t, String label, String value, int color) {
         t.setText(label + ":   " + value); t.setTextColor(color); t.setTextSize(15); t.setPadding(0, Ux.dp(this, 3), 0, Ux.dp(this, 3));
     }
-    void reset() { lines.clear(); partyId = 0; refId = 0; invDiscount = 0; editing = null; refresh(); }
+    void reset() { lines.clear(); partyId = 0; refId = 0; invDiscount = 0; redeemPts = 0; redeemVal = 0; editing = null; refresh(); }
 
     void pay() {
         if (lines.isEmpty()) { Ux.alert(this, "الفاتورة فارغة"); return; }
@@ -244,9 +270,10 @@ public class InvoiceActivity extends AppCompatActivity {
         box.addView(Ux.text(this, "المبلغ المدفوع", 13, false, Ux.MUTED));
         EditText paid = Ux.field(this, "المدفوع", true); paid.setText(Ui.q(inv.total)); box.addView(paid);
         TextView change = Ux.text(this, "", 15, true, Ux.BLUE); box.addView(change);
+        final EditText[] tend = new EditText[1];
         if (type == InvType.SALE) {
             box.addView(Ux.text(this, "المبلغ المستلم من الزبون (لحساب الباقي)", 13, false, Ux.MUTED));
-            EditText tendered = Ux.field(this, "المستلم", true); box.addView(tendered);
+            EditText tendered = Ux.field(this, "المستلم", true); box.addView(tendered); tend[0] = tendered;
             tendered.addTextChangedListener(new TextWatcher() {
                 public void beforeTextChanged(CharSequence s, int a, int b, int c) {} public void onTextChanged(CharSequence s, int a, int b, int c) {}
                 public void afterTextChanged(Editable e) { double t = Ui.num(e.toString()); change.setText(t > 0 ? "الباقي للزبون: " + Ui.m(Math.max(0, t - Ui.num(paid.getText().toString()))) : ""); }
@@ -256,7 +283,7 @@ public class InvoiceActivity extends AppCompatActivity {
         Button wb = Ux.button(this, "الصندوق: " + Store.db.walletName(walletId), Ux.TEAL, null); Ux.add(box, wb, 8);
         wb.setOnClickListener(v -> { List<String> n = new ArrayList<>(); for (Wallet w : ws) n.add(w.name); Ux.choose(this, "طريقة الدفع", n, i -> { walletId = ws.get(i).id; wb.setText("الصندوق: " + ws.get(i).name); }); });
         new AlertDialog.Builder(this).setTitle(type.title).setView(box)
-                .setPositiveButton("حفظ", (d, w) -> { Invoice x = build(); x.paid = Ui.r(Ui.num(paid.getText().toString())); finishSave(x); })
+                .setPositiveButton("حفظ", (d, w) -> { Invoice x = build(); x.paid = Ui.r(Ui.num(paid.getText().toString())); if (tend[0] != null) x.tendered = Ui.r(Ui.num(tend[0].getText().toString())); finishSave(x); })
                 .setNeutralButton("آجل (بدون دفع)", (d, w) -> { Invoice x = build(); x.paid = 0; finishSave(x); })
                 .setNegativeButton("رجوع", null).show();
     }
@@ -266,10 +293,25 @@ public class InvoiceActivity extends AppCompatActivity {
         boolean ok = Ux.run(this, () -> out[0] = editing != null ? Ops.replace(editing, inv) : Ops.save(inv));
         if (!ok) return;
         Invoice s = out[0];
+        if (com.market.JoFotara.enabled() && com.market.JoFotara.auto() && com.market.JoFotara.applies(s)) {
+            android.app.ProgressDialog pd = android.app.ProgressDialog.show(this, "الفوترة الوطنية", "جاري إرسال الفاتورة رقم " + s.no + "…", true);
+            new Thread(() -> { String r = com.market.JoFotara.submit(s);
+                runOnUiThread(() -> { try { pd.dismiss(); } catch (Exception ignored) {}
+                    if (!com.market.JoFotara.submitted(s)) Ux.alert(this, "لم تُقبل الفاتورة في نظام الفوترة الوطني:\n" + r + "\n\nالفاتورة محفوظة، ويمكن إعادة إرسالها من الإعدادات ← الفوترة الوطنية");
+                    saved(s); }); }).start();
+        } else saved(s);
+    }
+    void saved(Invoice s) {
+        if (Printer.auto() && !Printer.mac().isEmpty() && !s.type.noEffect()) Printer.printInvoice(this, s);
+        List<String> o = java.util.Arrays.asList("طباعة على الطابعة (بلوتوث)", "فاتورة PDF (طباعة / مشاركة)", "إرسال واتساب للعميل", "مشاركة كنص");
         new AlertDialog.Builder(this).setTitle("تم الحفظ")
-                .setMessage(s.type.title + " رقم " + s.no + "\nالإجمالي: " + Ui.m(s.total) + (s.total - s.paid > 0.0005 ? "\nآجل: " + Ui.m(s.total - s.paid) : ""))
+                .setMessage(s.type.title + " رقم " + s.no + "\nالإجمالي: " + Ui.m(s.total) + (s.tendered > s.paid + 0.0005 ? "\nالباقي للزبون: " + Ui.m(s.tendered - s.paid) : "")
+                        + (s.total - s.paid > 0.0005 && !s.type.noEffect() ? "\nآجل: " + Ui.m(s.total - s.paid) : ""))
                 .setPositiveButton("فاتورة جديدة", (d, w) -> { if (editing != null) finish(); else reset(); })
-                .setNeutralButton("طباعة / مشاركة", (d, w) -> { Ux.choose(this, "الفاتورة", java.util.Arrays.asList("فاتورة PDF (طباعة / مشاركة)", "مشاركة كنص (واتساب)"), k -> { if (k == 0) Pdf.invoice(this, s); else Share.invoice(this, s); }); if (editing != null) finish(); else reset(); })
+                .setNeutralButton("طباعة / مشاركة", (d, w) -> { Ux.choose(this, "الفاتورة", o, k -> {
+                    if (k == 0) Printer.printInvoice(this, s); else if (k == 1) Pdf.invoice(this, s);
+                    else if (k == 2) { com.market.Model.Party p = s.partyId == 0 ? null : Store.db.party(s.partyId); WA.send(this, p == null ? "" : p.phone, com.market.WhatsApp.invoiceText(s)); }
+                    else Share.invoice(this, s); }); if (editing != null) finish(); else reset(); })
                 .setCancelable(false).show();
     }
 }

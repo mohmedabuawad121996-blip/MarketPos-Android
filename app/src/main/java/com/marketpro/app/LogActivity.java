@@ -35,6 +35,7 @@ public class LogActivity extends Activity {
         list.setOnItemClickListener((p, v, i, id) -> cancel(ad.getItem(i)));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, 0, 1); lp.topMargin = Ux.dp(this, 8); body.addView(list, lp);
         load();
+        if ("new".equals(getIntent().getStringExtra("do")) && mode.equals("transfer")) newTransfer();
     }
     void load() {
         List<Object> l = new ArrayList<>();

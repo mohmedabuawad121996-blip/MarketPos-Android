@@ -42,6 +42,15 @@ public class PartiesActivity extends Activity {
         adapter = new Ux.Adapter<>(this::row); list.setAdapter(adapter);
         list.setOnItemClickListener((p, v, i, id) -> actions(adapter.getItem(i)));
         body.addView(list, new LinearLayout.LayoutParams(-1, 0, 1));
+        String d = getIntent().getStringExtra("do"); if (d == null) d = "";
+        if (d.equals("add")) edit(null);
+        else if (d.equals("opening") || d.equals("voucher")) { boolean op = d.equals("opening");
+            List<Party> ps = Store.db.parties(kind); List<String> n = new ArrayList<>(); for (Party p : ps) n.add(p.name);
+            if (ps.isEmpty()) Ux.alert(this, "لا يوجد " + (kind == Model.CUSTOMER ? "عملاء" : "موردون") + " بعد");
+            else Ux.choose(this, op ? "الرصيد الافتتاحي لـ" : (kind == Model.CUSTOMER ? "قبض من" : "صرف إلى"), n, i -> { Party p = ps.get(i);
+                if (op) Ux.input(this, "الرصيد الافتتاحي لـ " + p.name + (kind == Model.CUSTOMER ? " (موجب = عليه لنا)" : " (موجب = له علينا)"), "المبلغ", Ui.q(p.opening), true,
+                        s -> { if (Ux.run(this, () -> Ops.setOpening(p, Ui.num(s)))) load(); });
+                else voucher(p); }); }
     }
     @Override protected void onResume() { super.onResume(); load(); }
 
@@ -66,11 +75,12 @@ public class PartiesActivity extends Activity {
     void actions(Party p) {
         List<String> a = new ArrayList<>();
         a.add(kind == Model.CUSTOMER ? "سند قبض (استلام دفعة)" : "سند صرف (دفع للمورد)");
-        a.add("كشف الحساب"); a.add("تعديل البيانات");
+        a.add("كشف الحساب"); a.add("تعديل البيانات"); a.add("إرسال الرصيد واتساب");
         Ux.choose(this, p.name + " — الرصيد " + Ui.m(bal.getOrDefault(p.id, 0.0)), a, i -> {
             if (i == 0) voucher(p);
             else if (i == 1) startActivity(new Intent(this, StatementActivity.class).putExtra("kind", kind).putExtra("id", p.id));
-            else edit(p);
+            else if (i == 2) edit(p);
+            else WA.send(this, p.phone, com.market.WhatsApp.balanceText(p));
         });
     }
 

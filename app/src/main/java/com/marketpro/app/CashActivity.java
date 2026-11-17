@@ -34,6 +34,9 @@ public class CashActivity extends Activity {
         ListView list = new ListView(this); list.setDivider(null);
         ad = new Ux.Adapter<>(this::row); list.setAdapter(ad);
         body.addView(list, new LinearLayout.LayoutParams(-1, 0, 1));
+        String d = getIntent().getStringExtra("do");
+        if ("deposit".equals(d)) Ux.choose(this, "إيداع / سحب", java.util.Arrays.asList("إيداع في الصندوق", "سحب من الصندوق"), i -> manual(i == 0));
+        else if ("transfer".equals(d)) transfer();
     }
     @Override protected void onResume() { super.onResume(); load(); }
 

@@ -36,6 +36,8 @@ public class JournalActivity extends Activity {
         list.setOnItemClickListener((p, v, i, id) -> show(ad.getItem(i)));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, 0, 1); lp.topMargin = Ux.dp(this, 8); body.addView(list, lp);
         load();
+        String d = getIntent().getStringExtra("do");
+        if ("chart".equals(d)) chart(); else if ("new".equals(d)) newEntry(new ArrayList<>(), "");
     }
     void load() { List<JournalEntry> l = new ArrayList<>(); for (int i = Store.db.journal.size() - 1; i >= 0; i--) l.add(Store.db.journal.get(i)); ad.set(l); }
     View row(JournalEntry j, int pos) {
