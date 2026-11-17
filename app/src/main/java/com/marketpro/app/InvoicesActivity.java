@@ -70,7 +70,11 @@ public class InvoicesActivity extends Activity {
                 Ui.m(i.total), i.cancelled ? Ux.MUTED : Ux.PRIMARY);
     }
 
-    void details(Invoice inv) {
+    void details(Invoice inv) { details(this, inv, this::load); }
+
+    /** تفاصيل الفاتورة مع الإجراءات (تُستخدم أيضاً من التقارير) */
+    public static void details(Activity a, Invoice inv, Runnable after) {
+        InvType type = inv.type;
         StringBuilder b = new StringBuilder();
         for (InvLine l : inv.lines) b.append("• ").append(l.name).append("\n    ").append(Ui.q(l.qty)).append(' ').append(l.unit).append(" × ").append(Ui.m(l.price))
                 .append(l.discount > 0 ? " - " + Ui.m(l.discount) : "").append(" = ").append(Ui.m(l.total())).append('\n');
@@ -80,18 +84,21 @@ public class InvoicesActivity extends Activity {
         b.append("\nالإجمالي: ").append(Ui.m(inv.total)).append("\nالمدفوع: ").append(Ui.m(inv.paid));
         if (inv.cancelled) b.append("\n\n(ملغاة)");
         List<String> acts = new ArrayList<>(); List<Runnable> run = new ArrayList<>();
-        acts.add("مشاركة"); run.add(() -> Share.invoice(this, inv));
+        acts.add("مشاركة كنص"); run.add(() -> Share.invoice(a, inv));
+        acts.add("فاتورة PDF (طباعة / مشاركة)"); run.add(() -> Pdf.invoice(a, inv));
         if (!inv.cancelled) {
-            if (Session.cap("cap:cancel") || Session.admin()) { acts.add("تعديل"); run.add(() -> startActivity(new Intent(this, InvoiceActivity.class).putExtra("type", type.name()).putExtra("edit", inv.id))); }
+            if (Session.cap("cap:cancel") || Session.admin()) { acts.add("تعديل"); run.add(() -> a.startActivity(new Intent(a, InvoiceActivity.class).putExtra("type", type.name()).putExtra("edit", inv.id))); }
             if (type == InvType.SALE || type == InvType.PURCHASE) { acts.add("إرجاع من هذه الفاتورة"); InvType rt = type == InvType.SALE ? InvType.SALE_RETURN : InvType.PURCHASE_RETURN;
-                run.add(() -> startActivity(new Intent(this, InvoiceActivity.class).putExtra("type", rt.name()).putExtra("returnFrom", inv.id))); }
+                run.add(() -> a.startActivity(new Intent(a, InvoiceActivity.class).putExtra("type", rt.name()).putExtra("returnFrom", inv.id))); }
+            if (type == InvType.QUOTE) { acts.add("تحويل إلى فاتورة مبيعات");
+                run.add(() -> a.startActivity(new Intent(a, InvoiceActivity.class).putExtra("type", InvType.SALE.name()).putExtra("fromQuote", inv.id))); }
             if (type == InvType.ORDER && Ops.receivedBy(inv, 0) == null) { acts.add("استلام الطلبية (فاتورة مشتريات)");
-                run.add(() -> startActivity(new Intent(this, InvoiceActivity.class).putExtra("type", InvType.PURCHASE.name()).putExtra("fromOrder", inv.id))); }
-            if (Session.cap("cap:cancel") || Session.admin()) { acts.add("إلغاء الفاتورة"); run.add(() -> Ux.confirm(this, "إلغاء " + type.title + " رقم " + inv.no + "؟"
-                    + (type.noEffect() ? "" : "\nسيُعكس أثرها على المخزون والصندوق والحساب."), () -> { if (Ux.run(this, () -> Ops.cancel(inv))) load(); })); }
+                run.add(() -> a.startActivity(new Intent(a, InvoiceActivity.class).putExtra("type", InvType.PURCHASE.name()).putExtra("fromOrder", inv.id))); }
+            if (Session.cap("cap:cancel") || Session.admin()) { acts.add("إلغاء الفاتورة"); run.add(() -> Ux.confirm(a, "إلغاء " + type.title + " رقم " + inv.no + "؟"
+                    + (type.noEffect() ? "" : "\nسيُعكس أثرها على المخزون والصندوق والحساب."), () -> { if (Ux.run(a, () -> Ops.cancel(inv)) && after != null) after.run(); })); }
         }
-        new AlertDialog.Builder(this).setTitle(type.title + " رقم " + inv.no + " — " + Ui.dt(inv.date)).setMessage(b.toString())
+        new AlertDialog.Builder(a).setTitle(type.title + " رقم " + inv.no + " — " + Ui.dt(inv.date)).setMessage(b.toString())
                 .setPositiveButton("إغلاق", null)
-                .setNeutralButton("إجراءات", (d, w) -> Ux.choose(this, "إجراءات", acts, i -> run.get(i).run())).show();
+                .setNeutralButton("إجراءات", (d, w) -> Ux.choose(a, "إجراءات", acts, i -> run.get(i).run())).show();
     }
 }

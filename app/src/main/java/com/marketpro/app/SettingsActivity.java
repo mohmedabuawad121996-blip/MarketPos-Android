@@ -22,12 +22,16 @@ public class SettingsActivity extends Activity {
                 tax = f(store, "الرقم الضريبي", "taxNo", false), cur = f(store, "رمز العملة", "currency", false), dec = f(store, "عدد الخانات العشرية (0-3)", "decimals", true),
                 foot = f(store, "تذييل الفاتورة", "footer", false);
         CheckBox below = new CheckBox(this); below.setText("السماح بالبيع بأقل من التكلفة"); below.setChecked(Store.db.getB("allowBelowCost", false)); Ux.add(store, below, 6);
+        CheckBox taxOn = new CheckBox(this); taxOn.setText("تفعيل الضريبة"); taxOn.setChecked(Store.db.getB("taxEnabled", true)); store.addView(taxOn);
+        CheckBox taxIn = new CheckBox(this); taxIn.setText("الأسعار شاملة الضريبة"); taxIn.setChecked(Store.db.getB("taxInclusive", true)); store.addView(taxIn);
+        EditText rate = f(store, "نسبة الضريبة %", "taxRate", true);
         CheckBox neg = new CheckBox(this); neg.setText("السماح بالبيع والمخزون صفر (سالب)"); neg.setChecked(Store.db.getB("allowNegative", true)); store.addView(neg);
         if (admin) Ux.add(store, Ux.button(this, "حفظ الإعدادات", Ux.PRIMARY, v -> {
             put("storeName", name); put("address", addr); put("phone", phone); put("taxNo", tax); put("currency", cur); put("footer", foot);
             int d; try { d = Math.max(0, Math.min(3, Integer.parseInt(dec.getText().toString().trim()))); } catch (Exception e) { d = 3; }
             Store.db.set("decimals", String.valueOf(d));
             Store.db.set("allowBelowCost", below.isChecked() ? "1" : "0"); Store.db.set("allowNegative", neg.isChecked() ? "1" : "0");
+            Store.db.set("taxEnabled", taxOn.isChecked() ? "1" : "0"); Store.db.set("taxInclusive", taxIn.isChecked() ? "1" : "0"); put("taxRate", rate);
             Store.save(); Ux.toast(this, "تم الحفظ");
         }), 10);
         else store.addView(Ux.text(this, "تعديل الإعدادات للمدير فقط", 13, false, Ux.MUTED));
@@ -47,8 +51,23 @@ public class SettingsActivity extends Activity {
 
         LinearLayout lic = Ux.card(this); Ux.add(body, lic, 12);
         lic.addView(Ux.text(this, "الترخيص", 16, true, Ux.PRIMARY));
-        lic.addView(Ux.text(this, License.isActivated() ? "النسخة مفعّلة ✓" : "نسخة تجريبية — متبقٍ " + License.daysLeft() + " يوم", 15, true, License.isActivated() ? Ux.GREEN : Ux.ORANGE));
+        lic.addView(Ux.text(this, License.isActivated() ? "النسخة مفعّلة ✓" : License.status(), 15, true, License.isActivated() ? Ux.GREEN : Ux.ORANGE));
         lic.addView(Ux.text(this, "الإصدار " + BuildConfig.VERSION_NAME + "  •  " + Store.engine(), 13, false, Ux.MUTED));
+        if (!License.isActivated()) {
+            Ux.add(lic, Ux.text(this, "رقم الجهاز (أرسله لنا للحصول على مفتاح التفعيل):", 13, false, Ux.MUTED), 8);
+            android.widget.TextView id = Ux.text(this, License.machineId(), 20, true, Ux.TEXT); id.setTextIsSelectable(true); lic.addView(id);
+            LinearLayout r = Ux.row(this);
+            r.addView(Ux.button(this, "نسخ", Ux.TEAL, v -> { android.content.ClipboardManager cm = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                cm.setPrimaryClip(android.content.ClipData.newPlainText("id", License.machineId())); Ux.toast(this, "تم نسخ رقم الجهاز"); }), Ux.weight(1));
+            android.view.View g = new android.view.View(this); r.addView(g, new LinearLayout.LayoutParams(Ux.dp(this, 6), 1));
+            r.addView(Ux.button(this, "إرسال", Ux.BLUE, v -> Share.text(this, "رقم جهاز MarketPro", "طلب تفعيل MarketPro للهاتف\nرقم الجهاز: " + License.machineId())), Ux.weight(1));
+            Ux.add(lic, r, 6);
+            EditText key = Ux.field(this, "مفتاح التفعيل", false); Ux.add(lic, key, 8);
+            Ux.add(lic, Ux.button(this, "تفعيل", Ux.GREEN, v -> {
+                if (License.activate(key.getText().toString())) { Ux.alert(this, "تم تفعيل البرنامج بنجاح ✓"); recreate(); }
+                else Ux.alert(this, "مفتاح التفعيل غير صحيح لهذا الجهاز");
+            }), 6);
+        }
     }
     EditText f(LinearLayout box, String label, String key, boolean num) {
         Ux.add(box, Ux.text(this, label, 13, false, Ux.MUTED), 6);

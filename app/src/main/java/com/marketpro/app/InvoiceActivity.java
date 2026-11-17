@@ -41,7 +41,7 @@ public class InvoiceActivity extends AppCompatActivity {
     final List<InvLine> lines = new ArrayList<>();
     long partyId, refId; long walletId;
     double invDiscount;
-    Button partyBtn; EditText code; TextView subT, discT, taxT, totalT; Ux.Adapter<InvLine> adapter;
+    Button partyBtn, heldB; EditText code; TextView subT, discT, taxT, totalT; Ux.Adapter<InvLine> adapter;
     ActivityResultLauncher<ScanOptions> scanner;
 
     boolean buy() { return type == InvType.PURCHASE || type == InvType.PURCHASE_RETURN || type == InvType.ORDER; }
@@ -86,9 +86,13 @@ public class InvoiceActivity extends AppCompatActivity {
         discT.setOnClickListener(v -> Ux.input(this, "الخصم على الفاتورة", "0", Ui.q(invDiscount), true, s -> { invDiscount = Ui.num(s); refresh(); }));
         Ux.add(body, tot, 6);
         LinearLayout btns = Ux.row(this);
-        Button save = Ux.button(this, type == InvType.ORDER ? "حفظ الطلبية" : "الدفع والحفظ", Ux.GREEN, v -> pay()); btns.addView(save, Ux.weight(2));
+        Button save = Ux.button(this, type == InvType.ORDER ? "حفظ الطلبية" : type == InvType.QUOTE ? "حفظ عرض السعر" : "الدفع والحفظ", Ux.GREEN, v -> pay()); btns.addView(save, Ux.weight(2));
         Button clear = Ux.button(this, "جديدة", Ux.MUTED, v -> Ux.confirm(this, "مسح الفاتورة الحالية؟", this::reset)); LinearLayout.LayoutParams bl = Ux.weight(1); bl.setMarginStart(Ux.dp(this, 6)); btns.addView(clear, bl);
+        if (type == InvType.SALE || type == InvType.PURCHASE) {
+            heldB = Ux.button(this, "", Ux.ORANGE, v -> held()); LinearLayout.LayoutParams hl = Ux.weight(1.3f); hl.setMarginStart(Ux.dp(this, 6)); btns.addView(heldB, hl); }
         Ux.add(body, btns, 8);
+        long quote = getIntent().getLongExtra("fromQuote", 0);
+        if (quote != 0) { Invoice q = Store.db.invoice(quote); if (q != null) { for (InvLine l : q.lines) lines.add(l.copy()); partyId = q.partyId; invDiscount = q.discount; Ux.toast(this, "تم تحميل عرض السعر رقم " + q.no); } }
         if (from != 0) loadReturnFrom(Store.db.invoice(from));
         long order = getIntent().getLongExtra("fromOrder", 0);
         if (order != 0) { Invoice o = Store.db.invoice(order);
@@ -135,7 +139,7 @@ public class InvoiceActivity extends AppCompatActivity {
     }
 
     View lineView(InvLine l, int pos) {
-        String sub = Ui.q(l.qty) + " " + l.unit + " × " + Ui.m(l.price) + (l.discount > 0 ? "  - خصم " + Ui.m(l.discount) : "");
+        String sub = Ui.q(l.qty) + " " + l.unit + " × " + Ui.m(l.price) + (l.discount > 0 ? "  - خصم " + Ui.m(l.discount) : "") + (l.offer != null && !l.offer.isEmpty() ? "  🏷 " + l.offer : "");
         return Ux.listRow(this, (pos + 1) + ". " + l.name, sub, Ui.m(l.total()), Ux.TEXT);
     }
 
@@ -156,7 +160,7 @@ public class InvoiceActivity extends AppCompatActivity {
             double pr = t.isEmpty() ? Ui.num(price.getText().toString()) : (Ui.num(t) + dc) / q; // المجموع يحدد السعر بدقة كما في الحاسوب
             if (pr < 0) { Ux.alert(this, "سعر غير صحيح"); return; }
             if (!buy() && !Session.cap("cap:price") && Math.abs(pr - l.price) > 1e-9) { Ux.alert(this, "ليس لديك صلاحية تغيير السعر"); return; }
-            l.qty = q; l.price = pr; l.discount = dc; refresh();
+            if (Math.abs(dc - l.discount) > 1e-9) l.manualDisc = true; l.qty = q; l.price = pr; l.discount = dc; refresh();
         }).setNegativeButton("إلغاء", null).setNeutralButton("حذف", (d, w) -> { lines.remove(l); refresh(); }).show();
     }
 
@@ -199,6 +203,7 @@ public class InvoiceActivity extends AppCompatActivity {
     }
     void refresh() {
         partyBtn.setText((type.customerSide() ? "العميل: " : "المورد: ") + (partyId == 0 ? "نقدي" : Store.db.partyName(partyId)));
+        if (type == InvType.SALE || type == InvType.QUOTE) com.market.Offers.apply(lines); // العروض التلقائية
         adapter.set(lines);
         Invoice inv = build();
         setPair(subT, "المجموع", Ui.m(inv.subtotal), Ux.TEXT);
@@ -206,6 +211,24 @@ public class InvoiceActivity extends AppCompatActivity {
         setPair(taxT, "الضريبة", Ui.m(inv.tax), Ux.MUTED);
         setPair(totalT, "الإجمالي", Ui.m(inv.total) + " " + Store.db.get("currency", "د.أ"), Ux.PRIMARY);
         totalT.setTextSize(20);
+        if (heldB != null) heldB.setText("تعليق / المعلّقة (" + heldCount() + ")");
+    }
+    int heldCount() { int n = 0; for (Invoice h : Store.db.held) if (h.type == type) n++; return n; }
+    /** تعليق الفاتورة الحالية أو استرجاع فاتورة معلّقة */
+    void held() {
+        List<Invoice> hs = new ArrayList<>(); for (Invoice h : Store.db.held) if (h.type == type) hs.add(h);
+        List<String> o = new ArrayList<>(); if (!lines.isEmpty() && editing == null) o.add("⏸ تعليق الفاتورة الحالية");
+        for (Invoice h : hs) o.add("▶ " + Ui.dt(h.date) + "  •  " + (h.partyId == 0 ? "نقدي" : Store.db.partyName(h.partyId)) + "  •  " + h.lines.size() + " صنف  •  " + Ui.m(h.total));
+        if (o.isEmpty()) { Ux.alert(this, "لا توجد فواتير معلّقة"); return; }
+        int off = (!lines.isEmpty() && editing == null) ? 1 : 0;
+        Ux.choose(this, "الفواتير المعلّقة", o, i -> {
+            if (i < off) { Invoice h = build(); h.id = Store.db.next("held"); h.date = java.time.LocalDateTime.now(); h.partyName = Store.db.partyName(h.partyId);
+                Store.db.held.add(h); Store.save(); reset(); Ux.toast(this, "تم تعليق الفاتورة"); return; }
+            Invoice h = hs.get(i - off);
+            Runnable load = () -> { lines.clear(); for (InvLine l : h.lines) lines.add(l.copy()); partyId = h.partyId; invDiscount = h.discount; refId = h.refId;
+                Store.db.held.remove(h); Store.save(); refresh(); };
+            if (!lines.isEmpty()) Ux.confirm(this, "الفاتورة الحالية غير محفوظة وستُستبدل. متابعة؟", load); else load.run();
+        });
     }
     void setPair(TextView t, String label, String value, int color) {
         t.setText(label + ":   " + value); t.setTextColor(color); t.setTextSize(15); t.setPadding(0, Ux.dp(this, 3), 0, Ux.dp(this, 3));
@@ -215,7 +238,7 @@ public class InvoiceActivity extends AppCompatActivity {
     void pay() {
         if (lines.isEmpty()) { Ux.alert(this, "الفاتورة فارغة"); return; }
         Invoice inv = build();
-        if (type == InvType.ORDER) { inv.paid = 0; finishSave(inv); return; }
+        if (type.noEffect()) { inv.paid = 0; finishSave(inv); return; }
         LinearLayout box = new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL); int p = Ux.dp(this, 18); box.setPadding(p, Ux.dp(this, 8), p, 0);
         TextView big = Ux.text(this, Ui.m(inv.total), 32, true, Ux.PRIMARY); big.setGravity(android.view.Gravity.CENTER); box.addView(big);
         box.addView(Ux.text(this, "المبلغ المدفوع", 13, false, Ux.MUTED));
@@ -246,7 +269,7 @@ public class InvoiceActivity extends AppCompatActivity {
         new AlertDialog.Builder(this).setTitle("تم الحفظ")
                 .setMessage(s.type.title + " رقم " + s.no + "\nالإجمالي: " + Ui.m(s.total) + (s.total - s.paid > 0.0005 ? "\nآجل: " + Ui.m(s.total - s.paid) : ""))
                 .setPositiveButton("فاتورة جديدة", (d, w) -> { if (editing != null) finish(); else reset(); })
-                .setNeutralButton("مشاركة", (d, w) -> { Share.invoice(this, s); if (editing != null) finish(); else reset(); })
+                .setNeutralButton("طباعة / مشاركة", (d, w) -> { Ux.choose(this, "الفاتورة", java.util.Arrays.asList("فاتورة PDF (طباعة / مشاركة)", "مشاركة كنص (واتساب)"), k -> { if (k == 0) Pdf.invoice(this, s); else Share.invoice(this, s); }); if (editing != null) finish(); else reset(); })
                 .setCancelable(false).show();
     }
 }

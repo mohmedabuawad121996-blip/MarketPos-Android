@@ -48,16 +48,21 @@ public class HomeActivity extends Activity {
             t.setBackground(Ux.round(Ux.ORANGE, 14, this)); LinearLayout w = Ux.row(this); w.addView(t); body.addView(w); }
 
         List<Tile> tiles = Arrays.asList(
-                new Tile("المبيعات", "🛒", 0xFF16A34A, () -> menu("المبيعات", new String[]{"نقطة البيع (فاتورة مبيعات)", "مرتجع مبيعات", "سجل فواتير المبيعات", "سجل مرتجعات المبيعات"},
-                        i -> { if (i == 0) inv(InvType.SALE); else if (i == 1) inv(InvType.SALE_RETURN); else if (i == 2) log(InvType.SALE); else log(InvType.SALE_RETURN); })),
-                new Tile("المشتريات", "📦", 0xFF047857, () -> menu("المشتريات", new String[]{"فاتورة مشتريات", "مرتجع مشتريات", "تسجيل طلبية (لا تدخل المخزون)", "سجل فواتير المشتريات", "سجل الطلبيات"},
-                        i -> { if (i == 0) inv(InvType.PURCHASE); else if (i == 1) inv(InvType.PURCHASE_RETURN); else if (i == 2) inv(InvType.ORDER); else if (i == 3) log(InvType.PURCHASE); else log(InvType.ORDER); })),
+                new Tile("المبيعات", "🛒", 0xFF16A34A, () -> menu("المبيعات", new String[]{"نقطة البيع (فاتورة مبيعات)", "مرتجع مبيعات", "عرض سعر", "سجل فواتير المبيعات", "سجل مرتجعات المبيعات", "سجل عروض الأسعار"},
+                        i -> { InvType[] t = {InvType.SALE, InvType.SALE_RETURN, InvType.QUOTE}; if (i < 3) inv(t[i]); else log(t[i - 3]); })),
+                new Tile("المشتريات", "📦", 0xFF047857, () -> menu("المشتريات", new String[]{"فاتورة مشتريات", "مرتجع مشتريات", "تسجيل طلبية (لا تدخل المخزون)", "سجل فواتير المشتريات", "سجل مرتجعات المشتريات", "سجل الطلبيات"},
+                        i -> { InvType[] t = {InvType.PURCHASE, InvType.PURCHASE_RETURN, InvType.ORDER}; if (i < 3) inv(t[i]); else log(t[i - 3]); })),
                 new Tile("المخزون", "🏷", 0xFF0D9488, () -> open(ProductsActivity.class)),
                 new Tile("العملاء", "👥", 0xFF7C3AED, () -> parties(Model.CUSTOMER)),
                 new Tile("الموردين", "🚚", 0xFFEA580C, () -> parties(Model.SUPPLIER)),
                 new Tile("المصروفات", "💸", 0xFFDC2626, () -> open(ExpensesActivity.class)),
                 new Tile("الصندوق", "👛", 0xFFA16207, () -> open(CashActivity.class)),
                 new Tile("التقارير", "📊", 0xFF2563EB, () -> open(ReportsActivity.class)),
+                new Tile("الورديات", "🧾", 0xFF0891B2, () -> open(ShiftsActivity.class)),
+                new Tile("العروض", "🏷", 0xFFDB2777, () -> open(OffersActivity.class)),
+                new Tile("أدوات ومعالجات", "🛠", 0xFF4F46E5, () -> open(ToolsActivity.class)),
+                new Tile("المحاسبة", "📒", 0xFF0F766E, () -> { if (com.market.Session.admin()) open(JournalActivity.class); else Ux.alert(this, "المحاسبة للمدير فقط"); }),
+                new Tile("المستخدمون", "👤", 0xFF64748B, () -> { if (com.market.Session.admin()) open(UsersActivity.class); else Ux.alert(this, "للمدير فقط"); }),
                 new Tile("الإعدادات", "⚙", 0xFF475569, () -> open(SettingsActivity.class)),
                 new Tile("النسخ الاحتياطي", "💾", 0xFF334155, () -> open(BackupActivity.class)));
         LinearLayout line = null;

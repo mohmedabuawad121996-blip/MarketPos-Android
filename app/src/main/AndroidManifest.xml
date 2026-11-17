@@ -32,6 +32,13 @@
         <activity android:name=".SettingsActivity" />
         <activity android:name=".BackupActivity" />
 
+        <activity android:name="com.marketpro.app.ShiftsActivity" android:exported="false" />
+        <activity android:name="com.marketpro.app.OffersActivity" android:exported="false" />
+        <activity android:name="com.marketpro.app.UsersActivity" android:exported="false" />
+        <activity android:name="com.marketpro.app.ListsActivity" android:exported="false" />
+        <activity android:name="com.marketpro.app.LogActivity" android:exported="false" />
+        <activity android:name="com.marketpro.app.JournalActivity" android:exported="false" />
+        <activity android:name="com.marketpro.app.ToolsActivity" android:exported="false" />
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.files"

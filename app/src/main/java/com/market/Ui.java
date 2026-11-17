@@ -37,6 +37,15 @@ public final class Ui {
     public static String dt(LocalDateTime d) { return d == null ? "" : d.format(DT); }
     public static LocalDateTime start(LocalDate d) { return d.atStartOfDay(); }
     public static LocalDateTime end(LocalDate d) { return d.plusDays(1).atStartOfDay(); }
+    public static boolean in(LocalDateTime t, LocalDate from, LocalDate to) { return !t.isBefore(start(from)) && t.isBefore(end(to)); }
+    public static String esc(String s) { return s == null ? "" : s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"); }
     public static boolean confirm(String msg) { return asker.confirm(msg); }
     public static void err(String msg) { teller.err(msg); }
+    /** رصيد عميل/مورد مع جهته (عليه / له) */
+    public static final class Bal implements Comparable<Bal> {
+        public final double v; public final boolean owes, due;
+        public Bal(int kind, double signed) { v = Math.abs(signed) < 0.0005 ? 0 : signed; owes = PartyUI.isDebit(kind, signed); due = signed > 0.0005; }
+        public String toString() { return Math.abs(v) < 0.0005 ? m(0) : m(Math.abs(v)) + " " + (owes ? "عليه" : "له"); }
+        public int compareTo(Bal o) { return Double.compare(owes ? Math.abs(v) : -Math.abs(v), o.owes ? Math.abs(o.v) : -Math.abs(o.v)); }
+    }
 }
