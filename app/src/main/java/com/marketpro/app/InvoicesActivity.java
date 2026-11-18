@@ -103,7 +103,7 @@ public class InvoicesActivity extends Activity {
             if (Session.cap("cap:cancel") || Session.admin()) { acts.add("إلغاء الفاتورة"); run.add(() -> Ux.confirm(a, "إلغاء " + type.title + " رقم " + inv.no + "؟"
                     + (type.noEffect() ? "" : "\nسيُعكس أثرها على المخزون والصندوق والحساب."), () -> { if (Ux.run(a, () -> Ops.cancel(inv)) && after != null) after.run(); })); }
         }
-        new AlertDialog.Builder(a).setTitle(type.title + " رقم " + inv.no + " — " + Ui.dt(inv.date)).setMessage(b.toString())
+        new Dlg(a).setTitle(type.title + " رقم " + inv.no + " — " + Ui.dt(inv.date)).setMessage(b.toString())
                 .setPositiveButton("إغلاق", null)
                 .setNeutralButton("إجراءات", (d, w) -> Ux.choose(a, "إجراءات", acts, i -> run.get(i).run())).show();
     }

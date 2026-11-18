@@ -72,7 +72,7 @@ public class ShiftsActivity extends Activity {
         android.widget.ScrollView sv = new android.widget.ScrollView(this); sv.addView(c);
         String txt = "وردية " + s.no + " — " + s.user + "\n" + Ui.dt(s.opened) + " ← " + (s.closed == null ? "مفتوحة" : Ui.dt(s.closed))
                 + "\nالمبيعات: " + Ui.m(s.sales) + "\nالنقد المتوقع: " + Ui.m(s.expectedCash) + (s.closed == null ? "" : "\nالمعدود: " + Ui.m(s.countedCash) + "\nالفرق: " + Ui.m(s.diff));
-        new android.app.AlertDialog.Builder(this).setTitle("وردية رقم " + s.no).setView(sv).setPositiveButton("إغلاق", null)
+        new Dlg(this).setTitle("وردية رقم " + s.no).setView(sv).setPositiveButton("إغلاق", null)
                 .setNeutralButton("مشاركة", (d, w) -> Share.text(this, "وردية " + s.no, txt)).show();
     }
 }

@@ -72,7 +72,7 @@ public class LogActivity extends Activity {
     void addItem(long from, long to, Map<Long, Double> items) {
         StringBuilder s = new StringBuilder(); for (Map.Entry<Long, Double> e : items.entrySet()) s.append("• ").append(Store.db.products.get(e.getKey()).name).append(": ").append(Ui.q(e.getValue())).append('\n');
         List<String> o = new ArrayList<>(); o.add("+ إضافة صنف"); if (!items.isEmpty()) o.add("✓ تنفيذ التحويل (" + items.size() + " صنف)");
-        new android.app.AlertDialog.Builder(this).setTitle(Store.db.whName(from) + " ← " + Store.db.whName(to)).setMessage(s.length() == 0 ? "لا أصناف بعد" : s.toString())
+        new Dlg(this).setTitle(Store.db.whName(from) + " ← " + Store.db.whName(to)).setMessage(s.length() == 0 ? "لا أصناف بعد" : s.toString())
                 .setPositiveButton("+ صنف", (d, w) -> Ux.input(this, "ابحث عن الصنف", "الاسم أو الباركود", "", false, q -> {
                     List<Product> ps = new ArrayList<>(); List<String> names = new ArrayList<>(); String k = q.toLowerCase();
                     for (Product x : Store.db.products.values()) if (x.active && (x.name.toLowerCase().contains(k) || (x.barcode != null && x.barcode.contains(k)))) { ps.add(x); names.add(x.name + "  (المتوفر " + Ui.q(Store.db.whQty(x.id, from)) + ")"); if (ps.size() >= 60) break; }

@@ -86,7 +86,7 @@ public class ToolsActivity extends AppCompatActivity {
         String offer = ""; com.market.Model.Offer o = Offers.live(p.id, java.time.LocalDate.now()); if (o != null) offer = "\n\n🏷 عرض: " + Offers.title(o);
         String msg = "سعر " + p.unit + ": " + Ui.m(p.price) + (p.hasBig() ? "\nسعر " + p.bigUnit + " (" + Ui.q(p.factor) + "): " + Ui.m(p.bigPrice > 0 ? p.bigPrice : p.price * p.factor) : "")
                 + "\n\nالمتوفر: " + p.stockText() + (Session.cap("cap:cost") ? "\nالتكلفة: " + Ui.m(p.cost) : "") + offer;
-        new AlertDialog.Builder(this).setTitle(p.name).setMessage(msg).setPositiveButton("إغلاق", null).show();
+        new Dlg(this).setTitle(p.name).setMessage(msg).setPositiveButton("إغلاق", null).show();
     }
 
     void expiry() {
@@ -94,7 +94,7 @@ public class ToolsActivity extends AppCompatActivity {
         StringBuilder s = new StringBuilder(); int days = Expiry.alertDays();
         for (Expiry.Row r : rows) s.append(r.days < 0 ? "⛔ " : r.days <= days ? "⚠ " : "• ").append(r.p.name).append("\n    ").append(r.b.expiry).append("  •  ")
                 .append(r.days < 0 ? "منتهي منذ " + (-r.days) + " يوم" : "باقٍ " + r.days + " يوم").append("  •  الكمية ").append(Ui.q(r.left)).append('\n');
-        new AlertDialog.Builder(this).setTitle("تواريخ الصلاحية").setMessage(s.toString()).setPositiveButton("إغلاق", null)
+        new Dlg(this).setTitle("تواريخ الصلاحية").setMessage(s.toString()).setPositiveButton("إغلاق", null)
                 .setNeutralButton("مشاركة", (d, w) -> Share.text(this, "تواريخ الصلاحية", s.toString())).show();
     }
 
@@ -107,7 +107,7 @@ public class ToolsActivity extends AppCompatActivity {
             StringBuilder s = new StringBuilder(); double tot = 0;
             for (PurchaseOrders.Sug g : l) { s.append("• ").append(g.p.name).append(": ").append(PurchaseOrders.qtyText(g.p, g.need)).append("  (المتوفر ").append(Ui.q(g.p.qty)).append(")\n"); tot += g.need * g.cost; }
             s.append("\nالقيمة التقديرية: ").append(Ui.m(tot)).append("\n(حسب مبيعات آخر 30 يوماً لتغطية 14 يوماً)");
-            new AlertDialog.Builder(this).setTitle("اقتراح طلبية — " + l.size() + " صنف").setMessage(s.toString()).setNegativeButton("إغلاق", null)
+            new Dlg(this).setTitle("اقتراح طلبية — " + l.size() + " صنف").setMessage(s.toString()).setNegativeButton("إغلاق", null)
                     .setNeutralButton("مشاركة", (d, w) -> Share.text(this, "اقتراح طلبية", s.toString()))
                     .setPositiveButton("إنشاء طلبية شراء", (d, w) -> {
                         com.market.Model.Invoice o = new com.market.Model.Invoice(); o.type = InvType.ORDER; o.partyId = sid; o.user = Session.name();

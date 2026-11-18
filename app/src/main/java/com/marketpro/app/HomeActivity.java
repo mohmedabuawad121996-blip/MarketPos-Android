@@ -147,7 +147,7 @@ public class HomeActivity extends Activity {
         head.addView(Ux.text(this, n + " عمليات", 11, false, 0xDCFFFFFF));
         box.addView(head);
         ScrollView sv = new ScrollView(this); LinearLayout rows = new LinearLayout(this); rows.setOrientation(LinearLayout.VERTICAL); sv.addView(rows); box.addView(sv);
-        AlertDialog d = new AlertDialog.Builder(this).setView(box).create();
+        AlertDialog d = new Dlg(this).setView(box).create();
         for (Menus.Item it : s.items) {
             if (!Session.admin() && !Session.can(it.title)) continue;
             LinearLayout r = new LinearLayout(this); r.setOrientation(LinearLayout.HORIZONTAL); r.setGravity(Gravity.CENTER_VERTICAL); r.setPadding(Ux.dp(this, 14), Ux.dp(this, 11), Ux.dp(this, 12), Ux.dp(this, 11));

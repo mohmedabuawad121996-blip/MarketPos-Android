@@ -64,7 +64,7 @@ public class OffersActivity extends Activity {
         EditText qty = f(box, "الكمية (لعرض «كمية بسعر»)", true, Ui.q(o.qty)), val = f(box, "القيمة (السعر أو النسبة %)", true, o.value == 0 ? "" : Ui.q(o.value)),
                 from = f(box, "من تاريخ (yyyy-MM-dd)", false, o.from), to = f(box, "إلى تاريخ (yyyy-MM-dd)", false, o.to), name = f(box, "اسم العرض (اختياري)", false, o.name);
         android.widget.ScrollView sv = new android.widget.ScrollView(this); sv.addView(box);
-        new AlertDialog.Builder(this).setTitle(old == null ? "عرض جديد" : "تعديل العرض").setView(sv).setPositiveButton("حفظ", (d, w) -> {
+        new Dlg(this).setTitle(old == null ? "عرض جديد" : "تعديل العرض").setView(sv).setPositiveButton("حفظ", (d, w) -> {
             if (pid[0] == 0) { Ux.alert(this, "اختر الصنف"); return; }
             double v = Ui.num(val.getText().toString()); if (v <= 0) { Ux.alert(this, "أدخل قيمة العرض"); return; }
             try { LocalDate.parse(from.getText().toString().trim()); LocalDate.parse(to.getText().toString().trim()); } catch (Exception e) { Ux.alert(this, "صيغة التاريخ غير صحيحة. مثال: 2026-11-17"); return; }

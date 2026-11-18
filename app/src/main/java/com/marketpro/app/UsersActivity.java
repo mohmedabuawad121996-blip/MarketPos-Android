@@ -56,13 +56,13 @@ public class UsersActivity extends Activity {
         List<String> allScreens = new ArrayList<>(); for (Menus.Section sc : Menus.all()) if (!sc.adminOnly) for (Menus.Item it : sc.items) if (!allScreens.contains(it.title)) allScreens.add(it.title);
         Ux.add(box, Ux.button(this, "الشاشات المسموحة للكاشير", Ux.TEAL, v -> {
             boolean[] on = new boolean[allScreens.size()]; for (int i = 0; i < on.length; i++) on[i] = screens.contains(allScreens.get(i));
-            new AlertDialog.Builder(this).setTitle("الشاشات المسموحة").setMultiChoiceItems(allScreens.toArray(new String[0]), on, (d, i, c) -> on[i] = c)
+            new Dlg(this).setTitle("الشاشات المسموحة").setMultiChoiceItems(allScreens.toArray(new String[0]), on, (d, i, c) -> on[i] = c)
                     .setPositiveButton("تم", (d, w) -> { screens.clear(); for (int i = 0; i < on.length; i++) if (on[i]) screens.add(allScreens.get(i)); })
                     .setNeutralButton("الافتراضي", (d, w) -> { screens.clear(); screens.addAll(Session.defaults()); for (String[] c : CAPS) screens.remove(c[0]); })
                     .setNegativeButton("إلغاء", null).show();
         }), 8);
         android.widget.ScrollView sv = new android.widget.ScrollView(this); sv.addView(box);
-        new AlertDialog.Builder(this).setTitle(isNew ? "مستخدم جديد" : u.name).setView(sv).setPositiveButton("حفظ", (d, w) -> {
+        new Dlg(this).setTitle(isNew ? "مستخدم جديد" : u.name).setView(sv).setPositiveButton("حفظ", (d, w) -> {
             String nm = name.getText().toString().trim(), un = user.getText().toString().trim(), pw = pass.getText().toString();
             if (nm.isEmpty() || un.isEmpty()) { Ux.alert(this, "أدخل الاسم واسم الدخول"); return; }
             for (User x : Store.db.users) if (x != u && x.username.equalsIgnoreCase(un)) { Ux.alert(this, "اسم الدخول مستخدم"); return; }

@@ -150,7 +150,7 @@ public class SettingsActivity extends Activity {
     public static void pickTheme(Activity a, Runnable after) {
         LinearLayout box = new LinearLayout(a); box.setOrientation(LinearLayout.VERTICAL); int p = Ux.dp(a, 14); box.setPadding(p, p, p, p);
         android.widget.ScrollView sv = new android.widget.ScrollView(a); sv.addView(box);
-        android.app.AlertDialog d = new android.app.AlertDialog.Builder(a).setTitle("المظهر والثيمات").setView(sv).setNegativeButton("إغلاق", null).create();
+        android.app.AlertDialog d = new Dlg(a).setTitle("المظهر والثيمات").setView(sv).setNegativeButton("إغلاق", null).create();
         String cur = Ux.themeName();
         for (String t : Ux.THEMES) Ux.add(box, themeCard(a, t, t.equals(cur), () -> { Store.db.set("theme", t); Store.save(); Ux.applyTheme(); d.dismiss(); after.run(); }), 8);
         d.show();

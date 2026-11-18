@@ -115,7 +115,7 @@ public class PartiesActivity extends Activity {
         EditText taxId = f(box, "الرقم الوطني / الضريبي (للفوترة الوطنية)", false, isNew ? "" : old.taxId);
         EditText notesE = f(box, "ملاحظات", false, isNew ? "" : old.notes);
         ScrollView sv = new ScrollView(this); sv.addView(box);
-        new AlertDialog.Builder(this).setTitle(isNew ? "إضافة" : "تعديل " + old.name).setView(sv).setPositiveButton("حفظ", (d, w) -> {
+        new Dlg(this).setTitle(isNew ? "إضافة" : "تعديل " + old.name).setView(sv).setPositiveButton("حفظ", (d, w) -> {
             String nm = name.getText().toString().trim(); if (nm.isEmpty()) { Ux.alert(this, "الاسم مطلوب"); return; }
             Ux.run(this, () -> {
                 Party p = isNew ? new Party() : old;

@@ -49,7 +49,7 @@ public class JournalActivity extends Activity {
         Map<String, Accounting.Acc> m = Accounting.chartMap(); StringBuilder s = new StringBuilder();
         for (String[] a : Accounting.parse(j.lines)) s.append(Accounting.accName(m, a[0])).append("\n    مدين ").append(Ui.m(Ui.num(a[1]))).append("   دائن ").append(Ui.m(Ui.num(a[2])))
                 .append(a[3].isEmpty() ? "" : "   (" + a[3] + ")").append('\n');
-        AlertDialog.Builder bd = new AlertDialog.Builder(this).setTitle("قيد رقم " + j.no + " — " + Ui.dt(j.date)).setMessage(s.toString()).setPositiveButton("إغلاق", null);
+        AlertDialog.Builder bd = new Dlg(this).setTitle("قيد رقم " + j.no + " — " + Ui.dt(j.date)).setMessage(s.toString()).setPositiveButton("إغلاق", null);
         if (!j.cancelled) bd.setNeutralButton("إلغاء القيد", (d, w) -> Ux.confirm(this, "إلغاء القيد رقم " + j.no + "؟ سيُسجَّل قيد عكسي له.", () -> { j.cancelled = true; Store.save(); load(); }));
         bd.show();
     }
@@ -58,7 +58,7 @@ public class JournalActivity extends Activity {
         Map<String, Accounting.Acc> m = Accounting.chartMap(); double d = 0, c = 0; StringBuilder s = new StringBuilder();
         for (String[] a : lines) { d += Ui.num(a[1]); c += Ui.num(a[2]); s.append("• ").append(Accounting.accName(m, a[0])).append(Ui.num(a[1]) > 0 ? "  مدين " + Ui.m(Ui.num(a[1])) : "  دائن " + Ui.m(Ui.num(a[2]))).append('\n'); }
         s.append("\nالمدين: ").append(Ui.m(d)).append("   الدائن: ").append(Ui.m(c)).append(Math.abs(d - c) > 0.0005 ? "\nالفرق: " + Ui.m(Math.abs(d - c)) : "\n✓ متوازن");
-        new AlertDialog.Builder(this).setTitle("قيد يومية جديد").setMessage(s.toString())
+        new Dlg(this).setTitle("قيد يومية جديد").setMessage(s.toString())
                 .setPositiveButton("+ سطر", (x, w) -> addLine(lines, notes))
                 .setNeutralButton("حفظ القيد", (x, w) -> Ux.input(this, "بيان القيد", "البيان", notes, false, n -> {
                     if (!Ux.run(this, () -> Accounting.saveManual(LocalDateTime.now(), n, lines))) newEntry(lines, n); else load(); }))
@@ -78,7 +78,7 @@ public class JournalActivity extends Activity {
             if (a.type != type) { type = a.type; s.append("\n【").append(Accounting.TYPES[type]).append("】\n"); }
             s.append(a.code).append("  ").append(a.name).append(":  ").append(Ui.m(Accounting.bal(a, tot.get(a.key)))).append('\n');
         }
-        new AlertDialog.Builder(this).setTitle("دليل الحسابات والأرصدة").setMessage(s.toString().trim()).setPositiveButton("إغلاق", null)
+        new Dlg(this).setTitle("دليل الحسابات والأرصدة").setMessage(s.toString().trim()).setPositiveButton("إغلاق", null)
                 .setNeutralButton("مشاركة", (d, w) -> Share.text(this, "دليل الحسابات", s.toString())).show();
     }
 }

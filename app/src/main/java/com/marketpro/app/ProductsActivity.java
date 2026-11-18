@@ -128,7 +128,7 @@ public class ProductsActivity extends AppCompatActivity {
         android.widget.CheckBox taxable = new android.widget.CheckBox(this); taxable.setText("خاضع للضريبة"); taxable.setChecked(isNew || old.taxable); box.addView(taxable);
         EditText open = isNew ? f(box, "الرصيد الافتتاحي (الكمية)", true, "") : null;
         ScrollView sv = new ScrollView(this); sv.addView(box);
-        new AlertDialog.Builder(this).setTitle(isNew ? "صنف جديد" : "تعديل " + old.name).setView(sv)
+        new Dlg(this).setTitle(isNew ? "صنف جديد" : "تعديل " + old.name).setView(sv)
                 .setPositiveButton("حفظ", (d, w) -> {
                     Product p = isNew ? new Product() : old;
                     String bcode = barcode.getText().toString().trim(), bigCode = bigC.getText().toString().trim();

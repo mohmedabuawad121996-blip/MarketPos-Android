@@ -10,17 +10,31 @@ android {
         applicationId 'com.marketpro.app'
         minSdk 26
         targetSdk 34
-        versionCode 6
-        versionName '1.5'
+        versionCode 7
+        versionName '1.6'
     }
 
     buildFeatures {
         buildConfig true
     }
 
+    // مفتاح توقيع ثابت: كل التحديثات تُثبَّت فوق النسخة السابقة دون حذفها
+    signingConfigs {
+        fixed {
+            storeFile rootProject.file('keystore/marketpro.jks')
+            storePassword 'mpandroid2026'
+            keyAlias 'marketpro'
+            keyPassword 'mpandroid2026'
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig signingConfigs.fixed
+        }
         release {
             minifyEnabled false
+            signingConfig signingConfigs.fixed
         }
     }
 

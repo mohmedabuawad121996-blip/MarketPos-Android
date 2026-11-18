@@ -168,7 +168,7 @@ public class InvoiceActivity extends AppCompatActivity {
         EditText exp = Ux.field(this, "مثل 2027-05-31 أو 5/2027", false); exp.setText(l.expiry == null ? "" : l.expiry);
         if (type == InvType.PURCHASE) { box.addView(Ux.text(this, "تاريخ الصلاحية (اختياري)", 13, false, Ux.MUTED)); box.addView(exp);
             Ux.add(box, Ux.button(this, "آخر 10 أسعار شراء", Ux.TEAL, v -> priceHistory(l.productId)), 8); }
-        new AlertDialog.Builder(this).setTitle(l.name).setView(box).setPositiveButton("حفظ", (d, w) -> {
+        new Dlg(this).setTitle(l.name).setView(box).setPositiveButton("حفظ", (d, w) -> {
             double q = Ui.num(qty.getText().toString()); if (q <= 0) { Ux.alert(this, "كمية غير صحيحة"); return; }
             double dc = Ui.num(disc.getText().toString());
             String t = total.getText().toString().trim();
@@ -291,7 +291,7 @@ public class InvoiceActivity extends AppCompatActivity {
         List<Wallet> ws = Store.db.activeWallets();
         Button wb = Ux.button(this, "الصندوق: " + Store.db.walletName(walletId), Ux.TEAL, null); Ux.add(box, wb, 8);
         wb.setOnClickListener(v -> { List<String> n = new ArrayList<>(); for (Wallet w : ws) n.add(w.name); Ux.choose(this, "طريقة الدفع", n, i -> { walletId = ws.get(i).id; wb.setText("الصندوق: " + ws.get(i).name); }); });
-        new AlertDialog.Builder(this).setTitle(type.title).setView(box)
+        new Dlg(this).setTitle(type.title).setView(box)
                 .setPositiveButton("حفظ", (d, w) -> { Invoice x = build(); x.paid = Ui.r(Ui.num(paid.getText().toString())); if (tend[0] != null) x.tendered = Ui.r(Ui.num(tend[0].getText().toString()));
                     if (type == InvType.SALE && x.paid + 0.0005 < x.total && !Session.cap("cap:credit")) { Ux.alert(this, "البيع الآجل غير مسموح لهذا المستخدم"); return; }
                     Wallet pw = Store.db.wallet(walletId);
@@ -306,7 +306,7 @@ public class InvoiceActivity extends AppCompatActivity {
         EditText no = Ux.field(this, "رقم الشيك", false), bank = Ux.field(this, "البنك", false), due = Ux.field(this, "تاريخ الاستحقاق (yyyy-MM-dd)", false);
         due.setText(java.time.LocalDate.now().plusMonths(1).toString());
         for (EditText e : new EditText[]{no, bank, due}) Ux.add(box, e, 6);
-        new AlertDialog.Builder(this).setTitle("بيانات الشيك - " + Ui.m(x.paid)).setView(box).setPositiveButton("متابعة", (d, w) -> {
+        new Dlg(this).setTitle("بيانات الشيك - " + Ui.m(x.paid)).setView(box).setPositiveButton("متابعة", (d, w) -> {
             x.notes = (x.notes.isEmpty() ? "" : x.notes + " - ") + "شيك رقم " + no.getText().toString().trim() + (bank.getText().toString().trim().isEmpty() ? "" : " / " + bank.getText().toString().trim()) + " استحقاق " + due.getText().toString().trim();
             finishSave(x); }).setNegativeButton("إلغاء", null).show();
     }
@@ -321,7 +321,7 @@ public class InvoiceActivity extends AppCompatActivity {
             wb.setOnClickListener(v -> { List<com.market.Model.Warehouse> ws = Store.db.activeWarehouses(); List<String> nn = new ArrayList<>(); for (com.market.Model.Warehouse w : ws) nn.add(w.name);
                 Ux.choose(this, "المستودع", nn, i -> { wh[0] = ws.get(i).id; wb.setText("المستودع: " + ws.get(i).name); }); }); }
         if (partyId != 0 && type.customerSide()) Ux.add(box, Ux.button(this, "سند قبض / صرف لهذا العميل", Ux.PURPLE, v -> startActivity(new Intent(this, PartiesActivity.class).putExtra("kind", Model.CUSTOMER).putExtra("do", "voucher"))), 8);
-        new AlertDialog.Builder(this).setTitle("بيانات إضافية للفاتورة").setView(box).setPositiveButton("حفظ", (d, w) -> {
+        new Dlg(this).setTitle("بيانات إضافية للفاتورة").setView(box).setPositiveButton("حفظ", (d, w) -> {
             notes = n.getText().toString().trim(); supplierNo = sup.getText().toString().trim(); whId = wh[0]; }).setNegativeButton("إلغاء", null).show();
     }
     /** آخر 10 أسعار شراء للصنف مع المورد */
@@ -350,7 +350,7 @@ public class InvoiceActivity extends AppCompatActivity {
     void saved(Invoice s) {
         if (Printer.auto() && !Printer.mac().isEmpty() && !s.type.noEffect()) Printer.printInvoice(this, s);
         List<String> o = java.util.Arrays.asList("طباعة على الطابعة (بلوتوث)", "فاتورة PDF (طباعة / مشاركة)", "إرسال واتساب للعميل", "مشاركة كنص");
-        new AlertDialog.Builder(this).setTitle("تم الحفظ")
+        new Dlg(this).setTitle("تم الحفظ")
                 .setMessage(s.type.title + " رقم " + s.no + "\nالإجمالي: " + Ui.m(s.total) + (s.tendered > s.paid + 0.0005 ? "\nالباقي للزبون: " + Ui.m(s.tendered - s.paid) : "")
                         + (s.total - s.paid > 0.0005 && !s.type.noEffect() ? "\nآجل: " + Ui.m(s.total - s.paid) : ""))
                 .setPositiveButton("فاتورة جديدة", (d, w) -> { if (editing != null) finish(); else reset(); })

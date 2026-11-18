@@ -166,21 +166,70 @@ public final class Ux {
 
     // ------------------------------------------------ رسائل
     public static void toast(Context c, String s) { Toast.makeText(c, s, Toast.LENGTH_SHORT).show(); }
-    public static void alert(Context c, String msg) { new AlertDialog.Builder(c).setMessage(msg).setPositiveButton("موافق", null).show(); }
+    /** نافذة بنفس شكل نوافذ برنامج الكمبيوتر: ترويسة ملوّنة بالعنوان، محتوى، وأزرار مسطحة */
+    public static final class Win {
+        public final AlertDialog d; public final LinearLayout body, buttons; final Context c;
+        public Win(Context c, String title, String icon) {
+            this.c = c;
+            LinearLayout root = new LinearLayout(c); root.setOrientation(LinearLayout.VERTICAL); root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL); root.setBackgroundColor(CARD);
+            if (title != null && !title.isEmpty()) {
+                LinearLayout h = new LinearLayout(c); h.setOrientation(LinearLayout.HORIZONTAL); h.setGravity(Gravity.CENTER_VERTICAL); int p = dp(c, 14); h.setPadding(p, dp(c, 12), p, dp(c, 12));
+                h.setBackground(new GradientDrawable(GradientDrawable.Orientation.RIGHT_LEFT, new int[]{HEADER, shade(HEADER, DARK_MODE ? 0.08 : 0.18)}));
+                if (icon != null) { android.widget.ImageView iv = new android.widget.ImageView(c); iv.setImageDrawable(Icons.get(icon, dp(c, 20), Color.WHITE)); h.addView(iv); }
+                TextView t = text(c, title, 16, true, Color.WHITE); t.setPadding(dp(c, icon == null ? 0 : 8), 0, 0, 0); h.addView(t, new LinearLayout.LayoutParams(0, -2, 1));
+                root.addView(h);
+            }
+            body = new LinearLayout(c); body.setOrientation(LinearLayout.VERTICAL); int p = dp(c, 16); body.setPadding(p, dp(c, 12), p, dp(c, 6));
+            ScrollView sv = new ScrollView(c); sv.addView(body); root.addView(sv, new LinearLayout.LayoutParams(-1, -2, 1));
+            buttons = new LinearLayout(c); buttons.setOrientation(LinearLayout.HORIZONTAL); buttons.setPadding(dp(c, 12), dp(c, 8), dp(c, 12), dp(c, 12));
+            root.addView(buttons);
+            d = new AlertDialog.Builder(c).setView(root).create();
+            d.setOnShowListener(x -> { android.view.Window w = d.getWindow(); if (w != null) w.setBackgroundDrawable(round(CARD, 16, c)); });
+        }
+        public Win msg(String m) { TextView t = text(c, m, 15, false, TEXT); t.setLineSpacing(0, 1.2f); body.addView(t); return this; }
+        public Win add(View v) { Ux.add(body, v, body.getChildCount() == 0 ? 0 : 8); return this; }
+        public Win btn(String label, int color, Runnable r) {
+            Button b = button(c, label, color, v -> { d.dismiss(); if (r != null) r.run(); });
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, -2, 1); if (buttons.getChildCount() > 0) lp.setMarginStart(dp(c, 8)); buttons.addView(b, lp); return this;
+        }
+        /** زر لا يغلق النافذة (للتحقق قبل الإغلاق) */
+        public Win keep(String label, int color, Runnable r) {
+            Button b = button(c, label, color, v -> r.run());
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, -2, 1); if (buttons.getChildCount() > 0) lp.setMarginStart(dp(c, 8)); buttons.addView(b, lp); return this;
+        }
+        public Win show() { if (buttons.getChildCount() == 0) btn("إغلاق", GRAY, null); d.show(); return this; }
+    }
+    public static void alert(Context c, String msg) {
+        boolean err = msg != null && (msg.contains("غير") || msg.contains("لا يمكن") || msg.contains("خطأ") || msg.contains("تعذّر") || msg.contains("تعذر") || msg.contains("يجب"));
+        new Win(c, err ? "تنبيه" : "MarketPro", err ? "info" : "check").msg(msg).btn("موافق", PRIMARY, null).show();
+    }
     public static void confirm(Context c, String msg, Runnable yes) {
-        new AlertDialog.Builder(c).setMessage(msg).setPositiveButton("نعم", (d, w) -> yes.run()).setNegativeButton("لا", null).show();
+        new Win(c, "تأكيد", "info").msg(msg).btn("نعم", PRIMARY, yes).btn("لا", GRAY, null).show();
     }
     public interface Text { void got(String s); }
     public static void input(Context c, String title, String hint, String value, boolean number, Text cb) {
         EditText e = field(c, hint, number); if (value != null) { e.setText(value); e.selectAll(); }
-        LinearLayout box = new LinearLayout(c); int p = dp(c, 18); box.setPadding(p, dp(c, 8), p, 0); box.addView(e, new LinearLayout.LayoutParams(-1, -2));
-        new AlertDialog.Builder(c).setTitle(title).setView(box).setPositiveButton("موافق", (d, w) -> cb.got(e.getText().toString().trim()))
-                .setNegativeButton("إلغاء", null).show();
-        e.requestFocus();
+        Win w = new Win(c, null, null);
+        TextView t = text(c, title, 15, true, TEXT); w.add(t); w.add(e);
+        w.btn("موافق", PRIMARY, () -> cb.got(e.getText().toString().trim())).btn("إلغاء", GRAY, null).show();
+        e.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_DONE);
+        e.setOnEditorActionListener((v, id, ev) -> { w.d.dismiss(); cb.got(e.getText().toString().trim()); return true; });
+        e.requestFocus(); if (w.d.getWindow() != null) w.d.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
     }
     public interface Pick { void picked(int index); }
+    /** قائمة اختيار بصفوف وسهم (مثل قوائم الأقسام في الكمبيوتر) مع بحث عند كثرة الخيارات */
     public static void choose(Context c, String title, List<String> items, Pick cb) {
-        new AlertDialog.Builder(c).setTitle(title).setItems(items.toArray(new String[0]), (d, w) -> cb.picked(w)).show();
+        Win w = new Win(c, title, "list");
+        LinearLayout rows = new LinearLayout(c); rows.setOrientation(LinearLayout.VERTICAL); rows.setBackground(outline(CARD, BORDER, 10, c)); rows.setClipToOutline(true);
+        Runnable[] fill = new Runnable[1]; String[] q = {""};
+        fill[0] = () -> { rows.removeAllViews(); int shown = 0;
+            for (int i = 0; i < items.size(); i++) { String it = items.get(i); if (!q[0].isEmpty() && !it.toLowerCase().contains(q[0])) continue; final int k = i;
+                View r = listRow(c, it, null, null, 0); r.setOnClickListener(v -> { w.d.dismiss(); cb.picked(k); }); rows.addView(r); if (++shown >= 300) break; } };
+        if (items.size() > 12) { EditText s = field(c, "بحث…", false); s.addTextChangedListener(new android.text.TextWatcher() {
+                public void beforeTextChanged(CharSequence a, int b, int x, int y) {} public void onTextChanged(CharSequence a, int b, int x, int y) {}
+                public void afterTextChanged(android.text.Editable e) { q[0] = e.toString().trim().toLowerCase(); fill[0].run(); } }); w.add(s); }
+        fill[0].run(); w.add(rows);
+        w.btn("إلغاء", GRAY, null).show();
     }
 
     /** ينفّذ عملية محاسبية ويعرض رسالة الخطأ بدل انهيار التطبيق */
