@@ -49,7 +49,7 @@ public class JournalActivity extends Activity {
         Map<String, Accounting.Acc> m = Accounting.chartMap(); StringBuilder s = new StringBuilder();
         for (String[] a : Accounting.parse(j.lines)) s.append(Accounting.accName(m, a[0])).append("\n    مدين ").append(Ui.m(Ui.num(a[1]))).append("   دائن ").append(Ui.m(Ui.num(a[2])))
                 .append(a[3].isEmpty() ? "" : "   (" + a[3] + ")").append('\n');
-        AlertDialog.Builder bd = new Dlg(this).setTitle("قيد رقم " + j.no + " — " + Ui.dt(j.date)).setMessage(s.toString()).setPositiveButton("إغلاق", null);
+        Dlg bd = new Dlg(this).setTitle("قيد رقم " + j.no + " — " + Ui.dt(j.date)).setMessage(s.toString()).setPositiveButton("إغلاق", null);
         if (!j.cancelled) bd.setNeutralButton("إلغاء القيد", (d, w) -> Ux.confirm(this, "إلغاء القيد رقم " + j.no + "؟ سيُسجَّل قيد عكسي له.", () -> { j.cancelled = true; Store.save(); load(); }));
         bd.show();
     }
