@@ -85,7 +85,7 @@ public class LabelsActivity extends Activity {
             pdf.finishPage(page);
             File dir = new File(getCacheDir(), "share"); dir.mkdirs(); File f = new File(dir, "ملصقات_الباركود.pdf");
             try (FileOutputStream o = new FileOutputStream(f)) { pdf.writeTo(o); } pdf.close();
-            Share.share(this, f, "application/pdf");
+            PdfViewActivity.open(this, f, "ملصقات الباركود");
         } catch (Exception e) { throw new RuntimeException(e.getMessage(), e); } });
     }
     void label(Canvas c, Product p, float x, float y, float w, float h) {

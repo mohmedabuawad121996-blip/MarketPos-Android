@@ -49,6 +49,7 @@
         <activity android:name="com.marketpro.app.LinkActivity" android:exported="false" />
         <activity android:name="com.marketpro.app.MenuActivity" android:exported="false" />
         <activity android:name="com.marketpro.app.StocktakeActivity" android:exported="false" />
+        <activity android:name="com.marketpro.app.PdfViewActivity" android:exported="false" />
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.files"

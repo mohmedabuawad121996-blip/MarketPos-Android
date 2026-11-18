@@ -101,7 +101,7 @@ public final class Pdf {
     public static void shareTable(Activity a, String title, String period, ReportApi.Table t) {
         Ux.run(a, () -> { try {
             Doc d = new Doc(t.cols.length > 6); table(d, title, period, t.summary, t.cols, t.rows);
-            Share.share(a, d.save(a, title), "application/pdf");
+            PdfViewActivity.open(a, d.save(a, title), title);
         } catch (Exception e) { throw new RuntimeException(e.getMessage(), e); } });
     }
 
@@ -124,7 +124,7 @@ public final class Pdf {
             if (!foot.isEmpty() && d.y < d.h - M - 40) d.y += draw(d.c, foot, paint(11, false, 0xFF475569), M, d.y + 14, d.w - 2 * M, CENTER) + 14;
             if (inv.einvQr != null && !inv.einvQr.isEmpty()) { android.graphics.Bitmap q = Codes.qr(inv.einvQr, 300);
                 if (q != null) { if (d.y + 130 > d.h - M) { footer(d); d.newPage(); } d.c.drawBitmap(q, null, new android.graphics.Rect(d.w / 2 - 55, d.y + 10, d.w / 2 + 55, d.y + 120), null); } }
-            Share.share(a, d.save(a, inv.type.title + "_" + inv.no), "application/pdf");
+            PdfViewActivity.open(a, d.save(a, inv.type.title + "_" + inv.no), inv.type.title + " رقم " + inv.no);
         } catch (Exception e) { throw new RuntimeException(e.getMessage(), e); } });
     }
 }
