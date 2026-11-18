@@ -137,6 +137,35 @@ public final class Ux {
         return b;
     }
 
+    /** شكل عصري للزر: حواف دائرية كبيرة، ظل خفيف، وتأثير لمس. filled = زر ممتلئ، وغير ذلك = زر فاتح بلون التمييز */
+    public static Button modern(Button b, int color, boolean filled) {
+        Context c = b.getContext();
+        GradientDrawable bg;
+        int textColor, iconColor;
+        if (filled) {
+            bg = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{shade(color, 0.10), shade(color, -0.07)});
+            textColor = iconColor = Color.WHITE;
+        } else {
+            bg = outline(DARK_MODE ? shade(color, -0.55) : shade(color, 0.88), DARK_MODE ? shade(color, -0.25) : shade(color, 0.62), 14, c);
+            textColor = iconColor = DARK_MODE ? shade(color, 0.45) : color;
+        }
+        bg.setCornerRadius(dp(c, 14));
+        b.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x33000000 | (color & 0xFFFFFF)), bg, null));
+        b.setElevation(filled ? dp(c, 3) : 0);
+        b.setTextColor(textColor); b.setTextSize(14 * FS);
+        b.setMinHeight(dp(c, 48)); b.setMinimumHeight(dp(c, 48));
+        String ic = Icons.forText(b.getText().toString());
+        if (ic != null && b.getText().length() > 2) b.setCompoundDrawablesRelative(Icons.get(ic, dp(c, 18), iconColor), null, null, null);
+        return b;
+    }
+    /** حقل بحث عصري: حواف دائرية وارتفاع أكبر */
+    public static EditText modernField(EditText e) {
+        Context c = e.getContext();
+        e.setBackground(outline(CARD, BORDER, 14, c)); e.setMinHeight(dp(c, 52)); e.setMinimumHeight(dp(c, 52));
+        int p = dp(c, 14); e.setPadding(p, dp(c, 10), p, dp(c, 10));
+        return e;
+    }
+
     public static EditText field(Context c, String hint, boolean number) {
         EditText e = new EditText(c); e.setHint(hint); e.setTextSize(16 * FS); e.setSingleLine(true); e.setTextColor(TEXT); e.setHintTextColor(MUTED);
         e.setBackground(outline(CARD, BORDER, 8, c)); int p = dp(c, 10); e.setPadding(p, p, p, p);

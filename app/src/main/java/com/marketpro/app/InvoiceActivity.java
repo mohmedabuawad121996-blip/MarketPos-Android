@@ -62,21 +62,21 @@ public class InvoiceActivity extends AppCompatActivity {
         LinearLayout body = Ux.screen(this, (editing != null ? "تعديل " : "") + type.title + (editing != null ? " رقم " + editing.no : ""), false);
         // المورد / العميل والمحفظة
         LinearLayout top = Ux.row(this);
-        partyBtn = Ux.button(this, "", Ux.TEAL, v -> pickParty()); top.addView(partyBtn, Ux.weight(1));
-        if (isReturn()) { Button imp = Ux.button(this, "من فاتورة", Ux.PURPLE, v -> importFrom()); LinearLayout.LayoutParams lp = Ux.weight(0.6f); lp.setMarginStart(Ux.dp(this, 6)); top.addView(imp, lp); }
-        if (type == InvType.SALE && com.market.Loyalty.enabled()) { ptsB = Ux.button(this, "النقاط", Ux.ORANGE, v -> redeem()); LinearLayout.LayoutParams lp = Ux.weight(0.6f); lp.setMarginStart(Ux.dp(this, 6)); top.addView(ptsB, lp); }
-        Button more = Ux.button(this, "المزيد", Ux.SLATE, v -> more()); LinearLayout.LayoutParams ml = Ux.weight(0.55f); ml.setMarginStart(Ux.dp(this, 6)); top.addView(more, ml);
+        partyBtn = Ux.modern(Ux.button(this, "", Ux.TEAL, v -> pickParty()), Ux.TEAL, true); top.addView(partyBtn, Ux.weight(1));
+        if (isReturn()) { Button imp = Ux.modern(Ux.button(this, "من فاتورة", Ux.PURPLE, v -> importFrom()), Ux.PURPLE, false); LinearLayout.LayoutParams lp = Ux.weight(0.6f); lp.setMarginStart(Ux.dp(this, 6)); top.addView(imp, lp); }
+        if (type == InvType.SALE && com.market.Loyalty.enabled()) { ptsB = Ux.modern(Ux.button(this, "النقاط", Ux.ORANGE, v -> redeem()), Ux.ORANGE, false); LinearLayout.LayoutParams lp = Ux.weight(0.6f); lp.setMarginStart(Ux.dp(this, 6)); top.addView(ptsB, lp); }
+        Button more = Ux.modern(Ux.button(this, "المزيد", Ux.SLATE, v -> more()), Ux.SLATE, false); LinearLayout.LayoutParams ml = Ux.weight(0.55f); ml.setMarginStart(Ux.dp(this, 6)); top.addView(more, ml);
         body.addView(top);
         // الباركود
         LinearLayout scan = Ux.row(this);
-        code = Ux.field(this, "الباركود أو اسم الصنف", false); code.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        code = Ux.modernField(Ux.field(this, "الباركود أو اسم الصنف", false)); code.setImeOptions(EditorInfo.IME_ACTION_DONE);
         code.setOnEditorActionListener((v, id, e) -> { if (id == EditorInfo.IME_ACTION_DONE || (e != null && e.getKeyCode() == KeyEvent.KEYCODE_ENTER && e.getAction() == KeyEvent.ACTION_DOWN)) { submitCode(); return true; } return false; });
         scan.addView(code, Ux.weight(1));
-        Button cam = Ux.button(this, "📷", Ux.BLUE, v -> scan()); LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(Ux.dp(this, 54), -2); cl.setMarginStart(Ux.dp(this, 6)); scan.addView(cam, cl);
-        Button find = Ux.button(this, "🔍", Ux.PRIMARY, v -> search(code.getText().toString())); LinearLayout.LayoutParams fl = new LinearLayout.LayoutParams(Ux.dp(this, 54), -2); fl.setMarginStart(Ux.dp(this, 6)); scan.addView(find, fl);
+        Button cam = Ux.modern(Ux.button(this, "📷", Ux.BLUE, v -> scan()), Ux.BLUE, true); LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(Ux.dp(this, 52), -2); cl.setMarginStart(Ux.dp(this, 8)); scan.addView(cam, cl);
+        Button find = Ux.modern(Ux.button(this, "🔍", Ux.PRIMARY, v -> search(code.getText().toString())), Ux.PRIMARY, true); LinearLayout.LayoutParams fl = new LinearLayout.LayoutParams(Ux.dp(this, 52), -2); fl.setMarginStart(Ux.dp(this, 8)); scan.addView(find, fl);
         Ux.add(body, scan, 8);
         // السطور
-        ListView list = new ListView(this); list.setDivider(null);
+        ListView list = new ListView(this); list.setDivider(null); list.setBackground(Ux.outline(Ux.CARD, Ux.BORDER, 14, this)); list.setClipToOutline(true); list.setVerticalScrollBarEnabled(false);
         adapter = new Ux.Adapter<>(this::lineView); list.setAdapter(adapter);
         list.setOnItemClickListener((p, v, i, id) -> editLine(adapter.getItem(i)));
         list.setOnItemLongClickListener((p, v, i, id) -> { InvLine l = adapter.getItem(i); Ux.confirm(this, "حذف " + l.name + " من الفاتورة؟", () -> { lines.remove(l); refresh(); }); return true; });
@@ -84,15 +84,19 @@ public class InvoiceActivity extends AppCompatActivity {
         TextView hint = Ux.text(this, "اضغط على الصنف لتعديل الكمية أو السعر، واضغط مطولاً لحذفه", 12, false, Ux.MUTED); body.addView(hint);
         // المجاميع
         LinearLayout tot = Ux.card(this);
+        int tp = Ux.dp(this, 16); tot.setPadding(tp, Ux.dp(this, 12), tp, Ux.dp(this, 12));
         subT = new TextView(this); discT = new TextView(this); taxT = new TextView(this); totalT = new TextView(this);
-        tot.addView(subT); tot.addView(discT); tot.addView(taxT); tot.addView(totalT);
+        tot.addView(subT); tot.addView(discT); tot.addView(taxT);
+        View div = new View(this); div.setBackgroundColor(Ux.BORDER); LinearLayout.LayoutParams dv = new LinearLayout.LayoutParams(-1, Ux.dp(this, 1)); dv.topMargin = Ux.dp(this, 6); dv.bottomMargin = Ux.dp(this, 6); tot.addView(div, dv);
+        tot.addView(totalT);
         discT.setOnClickListener(v -> Ux.input(this, "الخصم على الفاتورة", "0", Ui.q(invDiscount), true, s -> { invDiscount = Ui.num(s); refresh(); }));
-        Ux.add(body, tot, 6);
+        Ux.add(body, tot, 8);
         LinearLayout btns = Ux.row(this);
-        Button save = Ux.button(this, type == InvType.ORDER ? "حفظ الطلبية" : type == InvType.QUOTE ? "حفظ عرض السعر" : "الدفع والحفظ", Ux.GREEN, v -> pay()); btns.addView(save, Ux.weight(2));
-        Button clear = Ux.button(this, "جديدة", Ux.MUTED, v -> Ux.confirm(this, "مسح الفاتورة الحالية؟", this::reset)); LinearLayout.LayoutParams bl = Ux.weight(1); bl.setMarginStart(Ux.dp(this, 6)); btns.addView(clear, bl);
+        Button save = Ux.modern(Ux.button(this, type == InvType.ORDER ? "حفظ الطلبية" : type == InvType.QUOTE ? "حفظ عرض السعر" : "الدفع والحفظ", Ux.GREEN, v -> pay()), Ux.GREEN, true);
+        btns.addView(save, Ux.weight(1.6f));
+        Button clear = Ux.modern(Ux.button(this, "جديدة", Ux.GRAY, v -> Ux.confirm(this, "مسح الفاتورة الحالية؟", this::reset)), Ux.GRAY, false); LinearLayout.LayoutParams bl = Ux.weight(0.9f); bl.setMarginStart(Ux.dp(this, 8)); btns.addView(clear, bl);
         if (type == InvType.SALE || type == InvType.PURCHASE) {
-            heldB = Ux.button(this, "", Ux.ORANGE, v -> held()); LinearLayout.LayoutParams hl = Ux.weight(1.3f); hl.setMarginStart(Ux.dp(this, 6)); btns.addView(heldB, hl); }
+            heldB = Ux.modern(Ux.button(this, "", Ux.ORANGE, v -> held()), Ux.ORANGE, false); LinearLayout.LayoutParams hl = Ux.weight(1.1f); hl.setMarginStart(Ux.dp(this, 8)); btns.addView(heldB, hl); }
         Ux.add(body, btns, 8);
         long quote = getIntent().getLongExtra("fromQuote", 0);
         if (quote != 0) { Invoice q = Store.db.invoice(quote); if (q != null) { for (InvLine l : q.lines) lines.add(l.copy()); partyId = q.partyId; invDiscount = q.discount; Ux.toast(this, "تم تحميل عرض السعر رقم " + q.no); } }
@@ -227,10 +231,9 @@ public class InvoiceActivity extends AppCompatActivity {
         setPair(subT, "المجموع", Ui.m(inv.subtotal), Ux.TEXT);
         setPair(discT, "الخصم (اضغط للتعديل)", Ui.m(invDiscount), Ux.ORANGE);
         setPair(taxT, "الضريبة", Ui.m(inv.tax), Ux.MUTED);
-        setPair(totalT, "الإجمالي", Ui.m(inv.total) + " " + Store.db.get("currency", "د.أ"), Ux.PRIMARY);
-        totalT.setTextSize(20);
+        setPair(totalT, "الإجمالي", Ui.m(inv.total) + " " + Store.db.get("currency", "د.أ"), Ux.PRIMARY, 22);
         if (ptsB != null) ptsB.setText(redeemPts > 0 ? "نقاط: " + redeemPts : partyId == 0 ? "النقاط" : "النقاط (" + com.market.Loyalty.balance(partyId) + ")");
-        if (heldB != null) heldB.setText("تعليق / المعلّقة (" + heldCount() + ")");
+        if (heldB != null) heldB.setText("المعلّقة (" + heldCount() + ")");
     }
     /** استبدال نقاط العميل كخصم */
     void redeem() {
@@ -265,9 +268,16 @@ public class InvoiceActivity extends AppCompatActivity {
             if (!lines.isEmpty()) Ux.confirm(this, "الفاتورة الحالية غير محفوظة وستُستبدل. متابعة؟", load); else load.run();
         });
     }
-    void setPair(TextView t, String label, String value, int color) {
-        t.setText(label + ":   " + value); t.setTextColor(color); t.setTextSize(15); t.setPadding(0, Ux.dp(this, 3), 0, Ux.dp(this, 3));
+    /** سطر في المجاميع: الاسم بلون خافت والقيمة بخط عريض بلون التمييز */
+    void setPair(TextView t, String label, String value, int color, float size) {
+        String sep = "  "; String s = label + sep + value; int vs = label.length() + sep.length();
+        android.text.SpannableString sp = new android.text.SpannableString(s);
+        sp.setSpan(new android.text.style.ForegroundColorSpan(Ux.MUTED), 0, label.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        sp.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), vs, s.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        sp.setSpan(new android.text.style.ForegroundColorSpan(color), vs, s.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        t.setText(sp); t.setTextSize(size * Ux.FS); t.setPadding(0, Ux.dp(this, 4), 0, Ux.dp(this, 4));
     }
+    void setPair(TextView t, String label, String value, int color) { setPair(t, label, value, color, 15); }
     void reset() { lines.clear(); partyId = 0; refId = 0; invDiscount = 0; redeemPts = 0; redeemVal = 0; notes = ""; supplierNo = ""; whId = Store.db.mainWh(); editing = null; refresh(); }
 
     void pay() {
