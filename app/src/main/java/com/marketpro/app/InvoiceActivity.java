@@ -74,6 +74,7 @@ public class InvoiceActivity extends AppCompatActivity {
         scan.addView(code, Ux.weight(1));
         Button cam = Ux.modern(Ux.button(this, "📷", Ux.BLUE, v -> scan()), Ux.BLUE, true); LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(Ux.dp(this, 52), -2); cl.setMarginStart(Ux.dp(this, 8)); scan.addView(cam, cl);
         Button find = Ux.modern(Ux.button(this, "🔍", Ux.PRIMARY, v -> search(code.getText().toString())), Ux.PRIMARY, true); LinearLayout.LayoutParams fl = new LinearLayout.LayoutParams(Ux.dp(this, 52), -2); fl.setMarginStart(Ux.dp(this, 8)); scan.addView(find, fl);
+        Button pick = Ux.modern(Ux.button(this, "➕", Ux.GREEN, v -> ProductPicker.show(this, buy(), p -> add(p, false))), Ux.GREEN, true); LinearLayout.LayoutParams pl = new LinearLayout.LayoutParams(Ux.dp(this, 52), -2); pl.setMarginStart(Ux.dp(this, 8)); scan.addView(pick, pl);
         Ux.add(body, scan, 8);
         // السطور
         ListView list = new ListView(this); list.setDivider(null); list.setBackground(Ux.outline(Ux.CARD, Ux.BORDER, 14, this)); list.setClipToOutline(true); list.setVerticalScrollBarEnabled(false);

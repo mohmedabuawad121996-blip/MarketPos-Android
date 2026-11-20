@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.widget.FrameLayout;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.GridLayout;
@@ -29,26 +30,30 @@ import java.util.List;
 
 /** الشاشة الرئيسية بنفس تصميم برنامج الكمبيوتر: الترويسة، التنبيهات، مؤشرات اليوم، وبطاقات الأقسام */
 public class HomeActivity extends Activity {
+    /** شكل الواجهة الحالي (فاتح أو داكن أو متدرج) */
+    HomeStyle st = HomeStyle.current();
     @Override protected void onResume() { super.onResume(); build(); }
 
     void build() {
-        LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(Ux.BG); root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        st = HomeStyle.current();
+        LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setBackground(st.bg()); root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         androidx.drawerlayout.widget.DrawerLayout dl = Sidebar.wrap(this, root, "الرئيسية");
         // الترويسة: الشعار واسم المحل + المستخدم والخروج (مثل شريط الكمبيوتر)
         LinearLayout top = new LinearLayout(this); top.setOrientation(LinearLayout.HORIZONTAL); top.setGravity(Gravity.CENTER_VERTICAL);
         int p = Ux.dp(this, 10); top.setPadding(p, p, p, p);
-        top.setBackground(new GradientDrawable(GradientDrawable.Orientation.RIGHT_LEFT, new int[]{Ux.HEADER, Ux.shade(Ux.HEADER, Ux.DARK_MODE ? 0.08 : 0.18)}));
+        top.setBackground(st.head());
         top.addView(Ux.iconBtn(this, "menu", Color.WHITE, v -> dl.openDrawer(androidx.core.view.GravityCompat.START)));
         ImageView lg = new ImageView(this); lg.setImageDrawable(Sidebar.logo(this, Ux.dp(this, 38))); LinearLayout.LayoutParams ll = new LinearLayout.LayoutParams(Ux.dp(this, 38), Ux.dp(this, 38)); ll.setMarginStart(Ux.dp(this, 4)); top.addView(lg, ll);
         LinearLayout names = new LinearLayout(this); names.setOrientation(LinearLayout.VERTICAL); names.setPadding(Ux.dp(this, 9), 0, 0, 0);
         TextView sn = Ux.text(this, Store.db.get("storeName", "سوبر ماركت"), 17, true, Color.WHITE); sn.setSingleLine(true); names.addView(sn);
         names.addView(Ux.text(this, "MarketPro - نظام محاسبة السوبر ماركت", 11, false, 0xFFC9D6EA));
         top.addView(names, new LinearLayout.LayoutParams(0, -2, 1));
+        top.addView(Ux.iconBtn(this, "sliders", Color.WHITE, v -> stylePicker()));
         top.addView(Ux.iconBtn(this, "palette", Color.WHITE, v -> themePicker()));
         top.addView(Ux.iconBtn(this, "logout", 0xFFFCA5A5, v -> { Session.user = null; startActivity(new Intent(this, LoginActivity.class)); finish(); }));
         root.addView(top);
         // الروابط السريعة
-        LinearLayout quick = new LinearLayout(this); quick.setOrientation(LinearLayout.HORIZONTAL); quick.setBackgroundColor(Ux.shade(Ux.HEADER, Ux.DARK_MODE ? 0.05 : 0.1));
+        LinearLayout quick = new LinearLayout(this); quick.setOrientation(LinearLayout.HORIZONTAL); quick.setBackgroundColor(st.quick);
         quick.setPadding(Ux.dp(this, 4), 0, Ux.dp(this, 4), Ux.dp(this, 4));
         qlink(quick, "cart", "بيع", Menus.inv(InvType.SALE));
         if (Session.admin()) qlink(quick, "box", "شراء", Menus.inv(InvType.PURCHASE));
@@ -59,6 +64,9 @@ public class HomeActivity extends Activity {
 
         ScrollView sv = new ScrollView(this); LinearLayout body = new LinearLayout(this); body.setOrientation(LinearLayout.VERTICAL);
         int bp = Ux.dp(this, 12); body.setPadding(bp, bp, bp, bp); sv.addView(body); root.addView(sv, new LinearLayout.LayoutParams(-1, 0, 1));
+        // التحية
+        TextView hi = Ux.text(this, "أهلاً، " + Session.name(), 18, true, st.text); body.addView(hi);
+        TextView hs = Ux.text(this, Store.db.get("storeName", "سوبر ماركت"), 12, false, st.muted); Ux.add(body, hs, 0);
         // التنبيهات
         long low = 0; for (Product x : Store.db.products.values()) if (x.active && x.minQty > 0 && x.qty <= x.minQty) low++;
         int ex = 0, soon = 0, alert = Expiry.alertDays(); try { for (Expiry.Row x : Expiry.open()) { if (x.days < 0) ex++; else if (x.days <= alert) soon++; } } catch (Exception ignored) {}
@@ -78,9 +86,9 @@ public class HomeActivity extends Activity {
             GridLayout.LayoutParams lp = new GridLayout.LayoutParams(); lp.width = w - Ux.dp(this, 8); lp.height = Ux.dp(this, 112); lp.setMargins(Ux.dp(this, 4), Ux.dp(this, 4), Ux.dp(this, 4), Ux.dp(this, 4));
             grid.addView(tile(sc), lp); }
         Ux.add(body, grid, 10);
-        TextView foot = Ux.text(this, "الإصدار " + BuildConfig.VERSION_NAME + "  •  " + Session.name(), 12, false, Ux.MUTED); foot.setGravity(Gravity.CENTER); Ux.add(body, foot, 12);
+        TextView foot = Ux.text(this, "الإصدار " + BuildConfig.VERSION_NAME + "  •  " + Session.name(), 12, false, st.muted); foot.setGravity(Gravity.CENTER); Ux.add(body, foot, 12);
         setContentView(dl);
-        getWindow().setStatusBarColor(Ux.HEADER);
+        getWindow().setStatusBarColor(st.headTop);
     }
 
     void qlink(LinearLayout bar, String icon, String label, Menus.Act act) {
@@ -114,13 +122,13 @@ public class HomeActivity extends Activity {
     }
     void stat(GridLayout g, int w, String t, String v, String sub, int c, String icon) {
         LinearLayout card = new LinearLayout(this); card.setOrientation(LinearLayout.HORIZONTAL); card.setGravity(Gravity.CENTER_VERTICAL);
-        card.setBackground(Ux.outline(Ux.CARD, Ux.BORDER, 12, this)); card.setElevation(Ux.dp(this, 1)); int p = Ux.dp(this, 10); card.setPadding(p, p, p, p);
+        card.setBackground(st.card(this)); card.setElevation(st.dark ? 0 : Ux.dp(this, 1)); int p = Ux.dp(this, 10); card.setPadding(p, p, p, p);
         GradientDrawable circle = new GradientDrawable(); circle.setShape(GradientDrawable.OVAL); circle.setColor((c & 0x00FFFFFF) | (Ux.DARK_MODE ? 0x3C000000 : 0x1E000000));
         android.graphics.drawable.LayerDrawable ld = new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{circle, Icons.get(icon, Ux.dp(this, 20), c)});
         int in = Ux.dp(this, 9); ld.setLayerInset(1, in, in, in, in);
         ImageView ic = new ImageView(this); ic.setImageDrawable(ld); card.addView(ic, new LinearLayout.LayoutParams(Ux.dp(this, 38), Ux.dp(this, 38)));
         LinearLayout txt = new LinearLayout(this); txt.setOrientation(LinearLayout.VERTICAL); txt.setPadding(Ux.dp(this, 8), 0, 0, 0);
-        txt.addView(Ux.text(this, t, 12, false, Ux.MUTED)); TextView vv = Ux.text(this, v, 17, true, c); vv.setSingleLine(true); txt.addView(vv); txt.addView(Ux.text(this, sub, 10.5f, false, Ux.MUTED));
+        txt.addView(Ux.text(this, t, 12, false, st.muted)); TextView vv = Ux.text(this, v, 17, true, c); vv.setSingleLine(true); txt.addView(vv); txt.addView(Ux.text(this, sub, 10.5f, false, st.muted));
         card.addView(txt, new LinearLayout.LayoutParams(0, -2, 1));
         GridLayout.LayoutParams lp = new GridLayout.LayoutParams(); lp.width = w - Ux.dp(this, 8); lp.setMargins(Ux.dp(this, 4), Ux.dp(this, 4), Ux.dp(this, 4), Ux.dp(this, 4));
         g.addView(card, lp);
@@ -163,4 +171,50 @@ public class HomeActivity extends Activity {
 
     /** نافذة اختيار الثيم: كل ثيم بطاقة بألوانه (نفس ثيمات الكمبيوتر) */
     void themePicker() { SettingsActivity.pickTheme(this, this::build); }
+
+    /** نافذة اختيار شكل الواجهة الرئيسية: 8 معاينات، والتطبيق فوري بإعادة بناء الشاشة */
+    void stylePicker() {
+        LinearLayout box = new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL); box.setLayoutDirection(View.LAYOUT_DIRECTION_RTL); box.setBackgroundColor(Ux.CARD);
+        int p = Ux.dp(this, 14); box.setPadding(p, p, p, p);
+        box.addView(Ux.text(this, "شكل الواجهة الرئيسية", 17, true, Ux.TEXT));
+        box.addView(Ux.text(this, "يتغير الشكل فوراً عند الاختيار", 12, false, Ux.MUTED));
+        GridLayout g = new GridLayout(this); g.setColumnCount(2); g.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        int cur = HomeStyle.index();
+        AlertDialog d = new Dlg(this).setView(box).create();
+        int w = (getResources().getDisplayMetrics().widthPixels - Ux.dp(this, 80)) / 2;
+        for (int i = 0; i < HomeStyle.ALL.length; i++) {
+            final int k = i;
+            View cell = preview(HomeStyle.ALL[i], i == cur);
+            cell.setOnClickListener(v -> { HomeStyle.select(k); d.dismiss(); build(); });
+            GridLayout.LayoutParams lp = new GridLayout.LayoutParams(); lp.width = w;
+            lp.setMargins(Ux.dp(this, 4), Ux.dp(this, 6), Ux.dp(this, 4), Ux.dp(this, 6));
+            g.addView(cell, lp);
+        }
+        box.addView(g);
+        d.show();
+    }
+
+    /** معاينة مصغّرة لشكل: خلفية بتدرّجه وترويسة وبطاقتان، والمحدد عليه إطار بلون التمييز */
+    View preview(HomeStyle s, boolean selected) {
+        LinearLayout col = new LinearLayout(this); col.setOrientation(LinearLayout.VERTICAL); col.setGravity(Gravity.CENTER_HORIZONTAL);
+        FrameLayout fr = new FrameLayout(this);
+        GradientDrawable bg = s.bg(); bg.setCornerRadius(Ux.dp(this, 14));
+        bg.setStroke(Ux.dp(this, selected ? 3 : 1), selected ? Ux.PRIMARY : s.stroke);
+        fr.setBackground(bg);
+        View hd = new View(this); hd.setBackground(s.head());
+        fr.addView(hd, new FrameLayout.LayoutParams(-1, Ux.dp(this, 22)));
+        View c1 = new View(this); c1.setBackground(s.card(this));
+        FrameLayout.LayoutParams l1 = new FrameLayout.LayoutParams(Ux.dp(this, 50), Ux.dp(this, 30), Gravity.LEFT | Gravity.TOP);
+        l1.setMargins(Ux.dp(this, 8), Ux.dp(this, 32), 0, 0); fr.addView(c1, l1);
+        View c2 = new View(this); c2.setBackground(s.card(this));
+        FrameLayout.LayoutParams l2 = new FrameLayout.LayoutParams(Ux.dp(this, 50), Ux.dp(this, 30), Gravity.RIGHT | Gravity.TOP);
+        l2.setMargins(0, Ux.dp(this, 32), Ux.dp(this, 8), 0); fr.addView(c2, l2);
+        View c3 = new View(this); c3.setBackground(s.card(this));
+        FrameLayout.LayoutParams l3 = new FrameLayout.LayoutParams(-1, Ux.dp(this, 16), Gravity.TOP);
+        l3.setMargins(Ux.dp(this, 8), Ux.dp(this, 68), Ux.dp(this, 8), 0); fr.addView(c3, l3);
+        col.addView(fr, new LinearLayout.LayoutParams(-1, Ux.dp(this, 96)));
+        TextView name = Ux.text(this, s.name, 13, selected, Ux.TEXT); name.setGravity(Gravity.CENTER); name.setPadding(0, Ux.dp(this, 6), 0, 0);
+        col.addView(name, new LinearLayout.LayoutParams(-1, -2));
+        return col;
+    }
 }
