@@ -34,7 +34,7 @@ public final class Ux {
             GOLD = 0xFFB7791F, SLATE = 0xFF475569, BLUE = 0xFF2563EB;
     /** مقياس حجم الخط */
     public static float FS = 1f;
-    public static final String[] THEMES = {"أزرق عصري", "داكن ليلي", "داكن فحمي", "فيروزي", "أخضر طبيعي", "بنفسجي", "وردي دافئ", "رملي فاتح", "رمادي احترافي", "زجاجي"};
+    public static final String[] THEMES = {"أزرق عصري", "داكن ليلي", "داكن فحمي", "أسود داكن", "فيروزي", "أخضر طبيعي", "بنفسجي", "وردي دافئ", "رملي فاتح", "رمادي احترافي", "زجاجي"};
     static { theme(THEMES[0]); }
 
     static void theme(String name) {
@@ -42,6 +42,7 @@ public final class Ux {
         switch (name) {
             case "داكن ليلي": DARK_MODE = true; set(0x2563EB, 0xBFDBFE, 0x0A1120, 0x080D18, 0x1C2942, 0xE8EEF6, 0x0F1626, 0x1B2436, 0xF3F6FB, 0x9FB0C6, 0x1B2436, 0x222E44, 0x2C3A54, 0x2E5BB8, 0x33415C); break;
             case "داكن فحمي": DARK_MODE = true; set(0x0369A1, 0x7DD3FC, 0x000000, 0x0A0A0B, 0x1A1A1D, 0xE7E7EA, 0x0B0B0D, 0x17181B, 0xFAFAFA, 0xA1A1AA, 0x17181B, 0x202126, 0x27282E, 0x0B4A6F, 0x2B2C32); break;
+            case "أسود داكن": DARK_MODE = true; set(0x2563EB, 0x93C5FD, 0x000000, 0x000000, 0x18181B, 0xF4F4F5, 0x000000, 0x0A0A0A, 0xFFFFFF, 0x9CA3AF, 0x0A0A0A, 0x141414, 0x1F1F1F, 0x1E3A8A, 0x262626); break;
             case "فيروزي": set(0x0F766E, 0x134E4A, 0x115E59, 0x042F2E, 0x134E4A, 0xCCFBF1, 0xF0FDFA, 0xFFFFFF, 0x0F2A27, 0x5B7A76, 0xFFFFFF, 0xF1FBF9, 0xCCFBF1, 0x99F6E4, 0xCBEEEA); break;
             case "وردي دافئ": set(0xE11D48, 0x881337, 0x9F1239, 0x4C0519, 0x881337, 0xFFE4E6, 0xFFF1F2, 0xFFFFFF, 0x2B1216, 0x8A5B62, 0xFFFFFF, 0xFFF6F7, 0xFFE4E6, 0xFECDD3, 0xF6D9DD); break;
             case "أخضر طبيعي": set(0x047857, 0x064E3B, 0x065F46, 0x022C22, 0x064E3B, 0xD1FAE5, 0xF0FDF4, 0xFFFFFF, 0x14281D, 0x5B7065, 0xFFFFFF, 0xF3FAF6, 0xD1FAE5, 0xBBF7D0, 0xCFE8DA); break;
