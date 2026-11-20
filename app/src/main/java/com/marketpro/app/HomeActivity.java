@@ -66,7 +66,7 @@ public class HomeActivity extends Activity {
         int bp = Ux.dp(this, 12); body.setPadding(bp, bp, bp, bp); sv.addView(body); root.addView(sv, new LinearLayout.LayoutParams(-1, 0, 1));
         // التحية
         TextView hi = Ux.text(this, "أهلاً، " + Session.name(), 18, true, st.text); body.addView(hi);
-        TextView hs = Ux.text(this, Store.db.get("storeName", "سوبر ماركت"), 12, false, st.muted); Ux.add(body, hs, 0);
+        TextView storeSub = Ux.text(this, Store.db.get("storeName", "سوبر ماركت"), 12, false, st.muted); Ux.add(body, storeSub, 0);
         // التنبيهات
         long low = 0; for (Product x : Store.db.products.values()) if (x.active && x.minQty > 0 && x.qty <= x.minQty) low++;
         int ex = 0, soon = 0, alert = Expiry.alertDays(); try { for (Expiry.Row x : Expiry.open()) { if (x.days < 0) ex++; else if (x.days <= alert) soon++; } } catch (Exception ignored) {}
